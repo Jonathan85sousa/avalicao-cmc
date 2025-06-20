@@ -35,27 +35,31 @@ const Header = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <label htmlFor="logo-upload">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="cursor-pointer hover:bg-opacity-10"
-                style={{borderColor: '#103722', color: '#103722'}}
-                asChild
-              >
-                <span>
-                  <Upload className="h-4 w-4 mr-2" />
-                  {logoUrl ? 'Alterar Logo' : 'Upload Logo'}
-                </span>
-              </Button>
-            </label>
-            <input
-              id="logo-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleLogoUpload}
-              className="hidden"
-            />
+            {!logoUrl && (
+              <>
+                <label htmlFor="logo-upload">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="cursor-pointer hover:bg-opacity-10 print:hidden"
+                    style={{borderColor: '#103722', color: '#103722'}}
+                    asChild
+                  >
+                    <span>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Logo
+                    </span>
+                  </Button>
+                </label>
+                <input
+                  id="logo-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+              </>
+            )}
           </div>
         </div>
       </div>
