@@ -21,21 +21,24 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
         return {
           label: 'Aprovado',
           icon: CheckCircle,
-          color: 'bg-green-100 text-green-800 border-green-200',
+          color: 'bg-green-100 border-green-200',
+          textColor: '#103722',
           emoji: '✅'
         };
       case 'reevaluation':
         return {
           label: 'Reavaliação',
           icon: AlertTriangle,
-          color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+          color: 'bg-yellow-100 border-yellow-200',
+          textColor: '#103722',
           emoji: '⚠️'
         };
       case 'rejected':
         return {
           label: 'Reprovado',
           icon: XCircle,
-          color: 'bg-red-100 text-red-800 border-red-200',
+          color: 'bg-red-100 border-red-200',
+          textColor: '#103722',
           emoji: '❌'
         };
     }
@@ -58,6 +61,48 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
     window.print();
   };
 
+  const criteriaLabels = {
+    seguranca: 'Segurança',
+    tecnica: 'Técnica',
+    comunicacao: 'Comunicação',
+    aptidaoFisica: 'Aptidão Física',
+    lideranca: 'Liderança',
+    operacional: 'Operacional'
+  };
+
+  const subCriteriaLabels = {
+    seguranca: {
+      prevencao: 'Prevenção',
+      epi: 'EPI',
+      procedimentos: 'Procedimentos'
+    },
+    tecnica: {
+      conhecimento: 'Conhecimento',
+      execucao: 'Execução',
+      eficiencia: 'Eficiência'
+    },
+    comunicacao: {
+      clareza: 'Clareza',
+      assertividade: 'Assertividade',
+      consistencia: 'Consistência'
+    },
+    aptidaoFisica: {
+      resistencia: 'Resistência',
+      forca: 'Força',
+      agilidade: 'Agilidade'
+    },
+    lideranca: {
+      motivacao: 'Motivação',
+      gestaoConflitos: 'Gestão de Conflitos',
+      tomadaDecisao: 'Tomada de Decisão'
+    },
+    operacional: {
+      equipagem: 'Equipagem',
+      lancamento: 'Lançamento',
+      frenagem: 'Frenagem'
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 print:max-w-none">
       {/* Cabeçalho do Relatório */}
@@ -65,22 +110,38 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
         <Button 
           variant="outline" 
           onClick={onBack}
-          className="flex items-center space-x-2"
+          className="flex items-center space-x-2 hover:bg-opacity-10"
+          style={{borderColor: '#103722', color: '#103722'}}
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Voltar ao Formulário</span>
         </Button>
         
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" onClick={handleExportPNG}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportPNG}
+            style={{borderColor: '#103722', color: '#103722'}}
+          >
             <Download className="h-4 w-4 mr-2" />
             PNG
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPDF}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportPDF}
+            style={{borderColor: '#103722', color: '#103722'}}
+          >
             <Download className="h-4 w-4 mr-2" />
             PDF
           </Button>
-          <Button variant="outline" size="sm" onClick={handlePrint}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handlePrint}
+            style={{borderColor: '#103722', color: '#103722'}}
+          >
             <Printer className="h-4 w-4 mr-2" />
             Imprimir
           </Button>
@@ -88,7 +149,7 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
       </div>
 
       {/* Dados do Candidato */}
-      <Card className="p-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <Card className="p-8 bg-gradient-to-r from-green-50 to-emerald-50 border-2" style={{borderColor: '#103722'}}>
         <div className="flex items-start space-x-6">
           <div className="flex-shrink-0">
             {data.candidatePhotoUrl ? (
@@ -105,11 +166,11 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
           </div>
           
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            <h1 className="text-3xl font-bold mb-2" style={{color: '#103722'}}>
               Relatório de Avaliação
             </h1>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{color: '#103722'}}>
               <div>
                 <p><span className="font-semibold">Candidato:</span> {data.candidateName}</p>
                 <p><span className="font-semibold">Idade:</span> {data.age} anos</p>
@@ -128,47 +189,52 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
       {/* Resultado da Avaliação */}
       <Card className="p-8">
         <div className="text-center mb-6">
-          <div className={`inline-flex items-center px-6 py-3 rounded-full text-2xl font-bold ${classificationDetails.color} border-2`}>
+          <div 
+            className={`inline-flex items-center px-6 py-3 rounded-full text-2xl font-bold ${classificationDetails.color} border-2`}
+            style={{color: classificationDetails.textColor}}
+          >
             <ClassificationIcon className="h-8 w-8 mr-3" />
             <span>{classificationDetails.emoji} {classificationDetails.label}</span>
           </div>
           
           <div className="mt-4">
-            <p className="text-3xl font-bold text-gray-800">
-              Nota Final: <span className="text-blue-600">{data.finalScore.toFixed(1)}</span>
+            <p className="text-3xl font-bold" style={{color: '#103722'}}>
+              Nota Final: <span style={{color: '#006633'}}>{data.finalScore.toFixed(1)}</span>
             </p>
             <p className="text-gray-600 mt-1">Média ponderada dos critérios avaliados</p>
           </div>
         </div>
 
-        {/* Detalhes dos Critérios */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          <div className="text-center p-4 bg-blue-50 rounded-lg">
-            <p className="text-lg font-semibold text-blue-600">Segurança</p>
-            <p className="text-2xl font-bold">{data.criteria.seguranca}</p>
-            <p className="text-xs text-gray-500">Peso 2</p>
-          </div>
-          <div className="text-center p-4 bg-blue-50 rounded-lg">
-            <p className="text-lg font-semibold text-blue-600">Técnica</p>
-            <p className="text-2xl font-bold">{data.criteria.tecnica}</p>
-            <p className="text-xs text-gray-500">Peso 2</p>
-          </div>
-          <div className="text-center p-4 bg-green-50 rounded-lg">
-            <p className="text-lg font-semibold text-green-600">Comunicação</p>
-            <p className="text-2xl font-bold">{data.criteria.comunicacao}</p>
-          </div>
-          <div className="text-center p-4 bg-green-50 rounded-lg">
-            <p className="text-lg font-semibold text-green-600">Aptidão Física</p>
-            <p className="text-2xl font-bold">{data.criteria.aptidaoFisica}</p>
-          </div>
-          <div className="text-center p-4 bg-green-50 rounded-lg">
-            <p className="text-lg font-semibold text-green-600">Liderança</p>
-            <p className="text-2xl font-bold">{data.criteria.lideranca}</p>
-          </div>
-          <div className="text-center p-4 bg-green-50 rounded-lg">
-            <p className="text-lg font-semibold text-green-600">Operacional</p>
-            <p className="text-2xl font-bold">{data.criteria.operacional}</p>
-          </div>
+        {/* Detalhes dos Critérios com Subtópicos */}
+        <div className="space-y-6">
+          {Object.entries(data.criteria).map(([key, criteriaData]) => (
+            <div key={key} className="border rounded-lg p-4" style={{borderColor: '#103722'}}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold" style={{color: '#103722'}}>
+                  {criteriaLabels[key as keyof typeof criteriaLabels]}
+                  {(key === 'seguranca' || key === 'tecnica') && 
+                    <span className="text-sm ml-2" style={{color: '#006633'}}>(Peso 2)</span>
+                  }
+                </h3>
+                <div className="text-2xl font-bold" style={{color: '#006633'}}>
+                  {criteriaData.average.toFixed(1)}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {Object.entries(criteriaData)
+                  .filter(([subKey]) => subKey !== 'average')
+                  .map(([subKey, subValue]) => (
+                    <div key={subKey} className="text-center p-3 bg-green-50 rounded-lg border" style={{borderColor: '#103722'}}>
+                      <p className="text-sm font-semibold" style={{color: '#103722'}}>
+                        {subCriteriaLabels[key as keyof typeof subCriteriaLabels]?.[subKey as keyof any] || subKey}
+                      </p>
+                      <p className="text-lg font-bold" style={{color: '#006633'}}>{subValue}</p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
 
@@ -191,13 +257,17 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
 
       {/* Gráficos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-center">Análise Radar - Competências</h3>
+        <Card className="p-6 border-2" style={{borderColor: '#103722'}}>
+          <h3 className="text-lg font-semibold mb-4 text-center" style={{color: '#103722'}}>
+            Análise Radar - Competências
+          </h3>
           <RadarChart data={data.criteria} />
         </Card>
         
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-center">Desempenho por Critério</h3>
+        <Card className="p-6 border-2" style={{borderColor: '#103722'}}>
+          <h3 className="text-lg font-semibold mb-4 text-center" style={{color: '#103722'}}>
+            Desempenho por Critério
+          </h3>
           <BarChart data={data.criteria} />
         </Card>
       </div>

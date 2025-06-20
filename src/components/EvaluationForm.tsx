@@ -17,38 +17,62 @@ const criteriaConfig: CriteriaConfig[] = [
   {
     key: 'seguranca',
     label: 'Segurança',
-    description: 'Prevenção, EPI, procedimentos',
-    weight: 2
+    weight: 2,
+    subCriteria: [
+      { key: 'prevencao', label: 'Prevenção', description: 'Identificação e prevenção de riscos' },
+      { key: 'epi', label: 'EPI', description: 'Uso correto de equipamentos de proteção' },
+      { key: 'procedimentos', label: 'Procedimentos', description: 'Seguimento de protocolos de segurança' }
+    ]
   },
   {
     key: 'tecnica',
-    label: 'Técnica', 
-    description: 'Conhecimento, execução, eficiência',
-    weight: 2
+    label: 'Técnica',
+    weight: 2,
+    subCriteria: [
+      { key: 'conhecimento', label: 'Conhecimento', description: 'Domínio técnico teórico' },
+      { key: 'execucao', label: 'Execução', description: 'Aplicação prática das técnicas' },
+      { key: 'eficiencia', label: 'Eficiência', description: 'Otimização de tempo e recursos' }
+    ]
   },
   {
     key: 'comunicacao',
     label: 'Comunicação',
-    description: 'Clareza, assertividade, consistência', 
-    weight: 1
+    weight: 1,
+    subCriteria: [
+      { key: 'clareza', label: 'Clareza', description: 'Comunicação clara e objetiva' },
+      { key: 'assertividade', label: 'Assertividade', description: 'Firmeza e confiança na comunicação' },
+      { key: 'consistencia', label: 'Consistência', description: 'Manutenção do padrão comunicativo' }
+    ]
   },
   {
     key: 'aptidaoFisica',
     label: 'Aptidão Física',
-    description: 'Resistência, força, agilidade',
-    weight: 1
+    weight: 1,
+    subCriteria: [
+      { key: 'resistencia', label: 'Resistência', description: 'Capacidade de sustentação do esforço' },
+      { key: 'forca', label: 'Força', description: 'Potência física demonstrada' },
+      { key: 'agilidade', label: 'Agilidade', description: 'Velocidade e coordenação motora' }
+    ]
   },
   {
     key: 'lideranca',
     label: 'Liderança',
-    description: 'Motivação, gestão de conflitos, tomada de decisão',
-    weight: 1
+    weight: 1,
+    subCriteria: [
+      { key: 'motivacao', label: 'Motivação', description: 'Capacidade de inspirar e engajar' },
+      { key: 'gestaoConflitos', label: 'Gestão de Conflitos', description: 'Resolução de situações tensas' },
+      { key: 'tomadaDecisao', label: 'Tomada de Decisão', description: 'Decisões rápidas e assertivas' }
+    ]
   },
   {
     key: 'operacional',
     label: 'Operacional',
-    description: 'Equipagem, lançamento, frenagem',
-    weight: 1
+    weight: 1,
+    subCriteria: [
+      { key: 'equipagem', label: 'Equipagem', description: 'Preparação e checagem de equipamentos' },
+      { key: 'lancamento', label: 'Lançamento', description: 'Procedimentos de início da atividade' },
+      { key: 'frenagem', label: 'Frenagem', description: 'Controle e parada segura' }
+    ]
   }
 ];
 
@@ -68,16 +92,40 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
   });
 
   const [attendance, setAttendance] = useState<boolean[]>([]);
-  const [criteria, setCriteria] = useState<Record<string, number>>({
-    seguranca: 5,
-    tecnica: 5,
-    comunicacao: 5,
-    aptidaoFisica: 5,
-    lideranca: 5,
-    operacional: 5,
+  
+  // Inicializar critérios com subtópicos
+  const [criteria, setCriteria] = useState(() => {
+    const initialCriteria: any = {};
+    criteriaConfig.forEach(config => {
+      initialCriteria[config.key] = {
+        average: 5
+      };
+      config.subCriteria.forEach(sub => {
+        initialCriteria[config.key][sub.key] = 5;
+      });
+    });
+    return initialCriteria;
   });
 
   const [photoPreview, setPhotoPreview] = useState<string>('');
+
+  // Calcular média quando subtópicos mudarem
+  const updateCriteriaAverage = (criteriaKey: string, subKey: string, value: number) => {
+    setCriteria(prev => {
+      const updated = { ...prev };
+      updated[criteriaKey] = { ...updated[criteriaKey], [subKey]: value };
+      
+      // Calcular média dos subtópicos
+      const config = criteriaConfig.find(c => c.key === criteriaKey);
+      if (config) {
+        const subValues = config.subCriteria.map(sub => updated[criteriaKey][sub.key]);
+        const average = subValues.reduce((sum, val) => sum + val, 0) / subValues.length;
+        updated[criteriaKey].average = average;
+      }
+      
+      return updated;
+    });
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -110,7 +158,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
     let totalWeight = 0;
 
     criteriaConfig.forEach(config => {
-      const score = criteria[config.key];
+      const score = criteria[config.key].average;
       totalWeightedScore += score * config.weight;
       totalWeight += config.weight;
     });
@@ -128,9 +176,13 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
 
     const feedback: string[] = [];
     criteriaConfig.forEach(config => {
-      const score = criteria[config.key];
+      const score = criteria[config.key].average;
       if (score < 8) {
-        feedback.push(`${config.label}: Necessário melhorar ${config.description.toLowerCase()}.`);
+        // Identificar subtópicos com nota baixa
+        const lowSubCriteria = config.subCriteria.filter(sub => criteria[config.key][sub.key] < 8);
+        if (lowSubCriteria.length > 0) {
+          feedback.push(`${config.label}: Melhorar ${lowSubCriteria.map(sub => sub.label.toLowerCase()).join(', ')}.`);
+        }
       }
     });
 
@@ -164,8 +216,8 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Dados Básicos */}
-      <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <h2 className="text-xl font-semibold text-blue-800 mb-4">Dados Básicos</h2>
+      <Card className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2" style={{borderColor: '#103722'}}>
+        <h2 className="text-xl font-semibold mb-4" style={{color: '#103722'}}>Dados Básicos</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -283,7 +335,8 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
               <img 
                 src={photoPreview} 
                 alt="Preview" 
-                className="h-20 w-20 object-cover rounded-full border-2 border-blue-200"
+                className="h-20 w-20 object-cover rounded-full border-2"
+                style={{borderColor: '#103722'}}
               />
             ) : (
               <div className="h-20 w-20 bg-gray-100 rounded-full flex items-center justify-center border-2 border-dashed border-gray-300">
@@ -292,7 +345,13 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
             )}
             
             <label htmlFor="photo-upload">
-              <Button variant="outline" size="sm" className="cursor-pointer" asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="cursor-pointer hover:bg-opacity-10"
+                style={{borderColor: '#103722', color: '#103722'}}
+                asChild
+              >
                 <span>
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Foto
@@ -311,37 +370,55 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
       </Card>
 
       {/* Critérios de Avaliação */}
-      <Card className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-        <h2 className="text-xl font-semibold text-green-800 mb-4">Critérios de Avaliação</h2>
+      <Card className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2" style={{borderColor: '#103722'}}>
+        <h2 className="text-xl font-semibold mb-6" style={{color: '#103722'}}>Critérios de Avaliação</h2>
         
-        <div className="space-y-6">
+        <div className="space-y-8">
           {criteriaConfig.map((config) => (
-            <div key={config.key} className="space-y-2">
+            <div key={config.key} className="space-y-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <Label className="text-lg font-medium">
-                    {config.label} {config.weight > 1 && <span className="text-sm text-blue-600">(Peso {config.weight})</span>}
-                  </Label>
-                  <p className="text-sm text-gray-600">{config.description}</p>
-                </div>
-                <div className="text-2xl font-bold text-blue-600 min-w-[3rem] text-center">
-                  {criteria[config.key]}
+                  <h3 className="text-lg font-semibold" style={{color: '#103722'}}>
+                    {config.label} {config.weight > 1 && <span className="text-sm" style={{color: '#006633'}}>(Peso {config.weight})</span>}
+                  </h3>
+                  <p className="text-lg font-bold mt-1" style={{color: '#006633'}}>
+                    Média: {criteria[config.key].average.toFixed(1)}
+                  </p>
                 </div>
               </div>
-              
-              <Slider
-                value={[criteria[config.key]]}
-                onValueChange={(value) => setCriteria(prev => ({ ...prev, [config.key]: value[0] }))}
-                max={10}
-                min={0}
-                step={0.5}
-                className="w-full"
-              />
-              
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>0</span>
-                <span>5</span>
-                <span>10</span>
+
+              {/* Subtópicos */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-4">
+                {config.subCriteria.map((subCriteria) => (
+                  <div key={subCriteria.key} className="space-y-2 p-4 bg-white rounded-lg border" style={{borderColor: '#103722'}}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <Label className="font-medium" style={{color: '#103722'}}>
+                          {subCriteria.label}
+                        </Label>
+                        <p className="text-xs text-gray-600">{subCriteria.description}</p>
+                      </div>
+                      <div className="text-xl font-bold min-w-[2rem] text-center" style={{color: '#006633'}}>
+                        {criteria[config.key][subCriteria.key]}
+                      </div>
+                    </div>
+                    
+                    <Slider
+                      value={[criteria[config.key][subCriteria.key]]}
+                      onValueChange={(value) => updateCriteriaAverage(config.key, subCriteria.key, value[0])}
+                      max={10}
+                      min={0}
+                      step={0.5}
+                      className="w-full"
+                    />
+                    
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>0</span>
+                      <span>5</span>
+                      <span>10</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -350,7 +427,8 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
 
       <Button 
         type="submit" 
-        className="w-full py-3 text-lg bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
+        className="w-full py-3 text-lg text-white hover:opacity-90"
+        style={{backgroundColor: '#006633'}}
       >
         Gerar Relatório de Avaliação
       </Button>

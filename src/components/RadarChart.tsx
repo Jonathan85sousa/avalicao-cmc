@@ -10,32 +10,32 @@ const RadarChart: React.FC<RadarChartProps> = ({ data }) => {
   const chartData = [
     {
       subject: 'Segurança',
-      value: data.seguranca,
+      value: data.seguranca.average,
       fullMark: 10,
     },
     {
       subject: 'Técnica',
-      value: data.tecnica,
+      value: data.tecnica.average,
       fullMark: 10,
     },
     {
       subject: 'Comunicação',
-      value: data.comunicacao,
+      value: data.comunicacao.average,
       fullMark: 10,
     },
     {
       subject: 'Aptidão Física',
-      value: data.aptidaoFisica,
+      value: data.aptidaoFisica.average,
       fullMark: 10,
     },
     {
       subject: 'Liderança',
-      value: data.lideranca,
+      value: data.lideranca.average,
       fullMark: 10,
     },
     {
       subject: 'Operacional',
-      value: data.operacional,
+      value: data.operacional.average,
       fullMark: 10,
     },
   ];
@@ -53,8 +53,8 @@ const RadarChart: React.FC<RadarChartProps> = ({ data }) => {
         <Radar
           name="Avaliação"
           dataKey="value"
-          stroke="#3B82F6"
-          fill="#3B82F6"
+          stroke="#103722"
+          fill="#103722"
           fillOpacity={0.2}
           strokeWidth={2}
         />

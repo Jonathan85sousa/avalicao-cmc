@@ -16,7 +16,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-white/90 backdrop-blur-sm border-b sticky top-0 z-50" style={{borderColor: '#103722'}}>
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -27,7 +27,7 @@ const Header = () => {
                 className="h-12 w-auto object-contain rounded-lg shadow-md"
               />
             ) : (
-              <div className="flex items-center space-x-2 text-blue-600">
+              <div className="flex items-center space-x-2" style={{color: '#103722'}}>
                 <Mountain className="h-8 w-8" />
                 <span className="text-xl font-bold">Aventura Pro</span>
               </div>
@@ -39,7 +39,8 @@ const Header = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="cursor-pointer hover:bg-blue-50"
+                className="cursor-pointer hover:bg-opacity-10"
+                style={{borderColor: '#103722', color: '#103722'}}
                 asChild
               >
                 <span>

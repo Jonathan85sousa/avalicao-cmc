@@ -1,4 +1,8 @@
 
+export interface SubCriteria {
+  [key: string]: number;
+}
+
 export interface EvaluationData {
   // Dados básicos
   trainingTitle: string;
@@ -11,14 +15,44 @@ export interface EvaluationData {
   candidatePhoto?: File;
   candidatePhotoUrl?: string;
   
-  // Critérios de avaliação
+  // Critérios de avaliação com subtópicos
   criteria: {
-    seguranca: number;
-    tecnica: number;
-    comunicacao: number;
-    aptidaoFisica: number;
-    lideranca: number;
-    operacional: number;
+    seguranca: {
+      prevencao: number;
+      epi: number;
+      procedimentos: number;
+      average: number;
+    };
+    tecnica: {
+      conhecimento: number;
+      execucao: number;
+      eficiencia: number;
+      average: number;
+    };
+    comunicacao: {
+      clareza: number;
+      assertividade: number;
+      consistencia: number;
+      average: number;
+    };
+    aptidaoFisica: {
+      resistencia: number;
+      forca: number;
+      agilidade: number;
+      average: number;
+    };
+    lideranca: {
+      motivacao: number;
+      gestaoConflitos: number;
+      tomadaDecisao: number;
+      average: number;
+    };
+    operacional: {
+      equipagem: number;
+      lancamento: number;
+      frenagem: number;
+      average: number;
+    };
   };
   
   // Resultados calculados
@@ -30,6 +64,10 @@ export interface EvaluationData {
 export interface CriteriaConfig {
   key: keyof EvaluationData['criteria'];
   label: string;
-  description: string;
   weight: number;
+  subCriteria: {
+    key: string;
+    label: string;
+    description: string;
+  }[];
 }
