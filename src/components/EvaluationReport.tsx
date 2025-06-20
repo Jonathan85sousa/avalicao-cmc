@@ -238,20 +238,44 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
         </div>
       </Card>
 
-      {/* Feedback de Melhorias */}
+      {/* Feedback Detalhado */}
       {data.feedback.length > 0 && (
-        <Card className="p-6 bg-orange-50 border-orange-200">
-          <h3 className="text-lg font-semibold text-orange-800 mb-4">
-            📋 Pontos de Melhoria
+        <Card className="p-6 bg-gradient-to-r from-orange-50 to-red-50 border-2" style={{borderColor: data.classification === 'rejected' ? '#dc2626' : '#f59e0b'}}>
+          <h3 className="text-xl font-semibold mb-6" style={{color: data.classification === 'rejected' ? '#dc2626' : '#f59e0b'}}>
+            {data.classification === 'rejected' ? '🔴 Plano de Melhoria' : '📋 Pontos de Aprimoramento'}
           </h3>
-          <ul className="space-y-2">
+          
+          <div className="space-y-4">
             {data.feedback.map((item, index) => (
-              <li key={index} className="flex items-start space-x-2 text-orange-700">
-                <span className="font-semibold text-orange-500">•</span>
-                <span>{item}</span>
-              </li>
+              <div key={index} className="p-4 bg-white rounded-lg border-l-4" style={{borderLeftColor: data.classification === 'rejected' ? '#dc2626' : '#f59e0b'}}>
+                <p className="text-gray-800 whitespace-pre-line leading-relaxed">{item}</p>
+              </div>
             ))}
-          </ul>
+          </div>
+
+          {data.classification === 'rejected' && (
+            <div className="mt-6 p-4 bg-red-100 rounded-lg border border-red-200">
+              <h4 className="font-semibold text-red-800 mb-2">⚠️ Próximos Passos Obrigatórios:</h4>
+              <ul className="text-red-700 space-y-1 text-sm">
+                <li>• Completar treinamento adicional nos pontos identificados</li>
+                <li>• Buscar mentoria especializada para desenvolvimento das competências</li>
+                <li>• Solicitar nova avaliação após pelo menos 60 dias de preparação</li>
+                <li>• Apresentar certificados de cursos complementares realizados</li>
+              </ul>
+            </div>
+          )}
+
+          {data.classification === 'reevaluation' && (
+            <div className="mt-6 p-4 bg-yellow-100 rounded-lg border border-yellow-200">
+              <h4 className="font-semibold text-yellow-800 mb-2">💡 Recomendações para Reavaliação:</h4>
+              <ul className="text-yellow-700 space-y-1 text-sm">
+                <li>• Dedicar 2-4 semanas aos pontos de melhoria identificados</li>
+                <li>• Praticar com supervisão nas áreas com menor pontuação</li>
+                <li>• Solicitar feedback contínuo durante o período de preparação</li>
+                <li>• Agendar reavaliação em até 30 dias</li>
+              </ul>
+            </div>
+          )}
         </Card>
       )}
 

@@ -8,7 +8,7 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Upload, User } from 'lucide-react';
+import { CalendarIcon, Upload, User, Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import { EvaluationData, CriteriaConfig } from '@/types/evaluation';
 import { cn } from '@/lib/utils';
@@ -87,7 +87,6 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
     age: '',
     trainingDate: undefined as Date | undefined,
     daysCount: '',
-    hoursCount: '',
     candidatePhoto: null as File | null,
   });
 
@@ -108,6 +107,9 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
   });
 
   const [photoPreview, setPhotoPreview] = useState<string>('');
+
+  // Calcular horas automaticamente (8h por dia)
+  const hoursCount = parseInt(formData.daysCount) * 8 || 0;
 
   // Calcular média quando subtópicos mudarem
   const updateCriteriaAverage = (criteriaKey: string, subKey: string, value: number) => {
@@ -136,6 +138,9 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
     }
   };
 
+  // Verificar se é dispositivo móvel
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -145,12 +150,120 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
     }
   };
 
+  const handleCameraCapture = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' } 
+      });
+      
+      // Criar um elemento de vídeo temporário para capturar a imagem
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+      
+      video.onloadedmetadata = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(video, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+            setFormData(prev => ({ ...prev, candidatePhoto: file }));
+            const url = URL.createObjectURL(file);
+            setPhotoPreview(url);
+          }
+        }, 'image/jpeg', 0.8);
+        
+        // Parar o stream da câmera
+        stream.getTracks().forEach(track => track.stop());
+      };
+    } catch (error) {
+      console.error('Erro ao acessar a câmera:', error);
+      // Fallback para upload de arquivo
+      document.getElementById('photo-upload')?.click();
+    }
+  };
+
   const handleAttendanceChange = (dayIndex: number, present: boolean) => {
     setAttendance(prev => {
       const updated = [...prev];
       updated[dayIndex] = present;
       return updated;
     });
+  };
+
+  const generateDetailedFeedback = (classification: string, criteriaScores: any) => {
+    const feedback: string[] = [];
+    
+    const improvementSuggestions = {
+      seguranca: {
+        prevencao: 'Realize cursos de identificação de riscos e análise de cenários perigosos.',
+        epi: 'Pratique o uso correto dos equipamentos de proteção individual e faça treinamentos específicos.',
+        procedimentos: 'Estude e pratique os protocolos de segurança estabelecidos.'
+      },
+      tecnica: {
+        conhecimento: 'Dedique mais tempo ao estudo teórico e participe de workshops técnicos.',
+        execucao: 'Pratique as técnicas com supervisão e busque mentoria especializada.',
+        eficiencia: 'Trabalhe na otimização de processos e gestão de tempo durante as atividades.'
+      },
+      comunicacao: {
+        clareza: 'Pratique técnicas de oratória e comunicação assertiva.',
+        assertividade: 'Desenvolva confiança através de exercícios de liderança e comunicação.',
+        consistencia: 'Mantenha um padrão comunicativo através de prática regular.'
+      },
+      aptidaoFisica: {
+        resistencia: 'Implemente um programa de condicionamento físico focado em resistência.',
+        forca: 'Desenvolva um plano de treinamento de força específico para a atividade.',
+        agilidade: 'Pratique exercícios de coordenação motora e velocidade.'
+      },
+      lideranca: {
+        motivacao: 'Desenvolva habilidades de coaching e técnicas motivacionais.',
+        gestaoConflitos: 'Estude técnicas de mediação e resolução de conflitos.',
+        tomadaDecisao: 'Pratique cenários de tomada de decisão sob pressão.'
+      },
+      operacional: {
+        equipagem: 'Pratique os procedimentos de checagem e preparação de equipamentos.',
+        lancamento: 'Revise e pratique os protocolos de início das atividades.',
+        frenagem: 'Treine técnicas de controle e parada segura.'
+      }
+    };
+
+    if (classification === 'rejected') {
+      feedback.push('🔴 REPROVADO - Ações necessárias para aprovação:');
+    } else if (classification === 'reevaluation') {
+      feedback.push('🟡 REAVALIAÇÃO - Pontos que precisam ser aprimorados:');
+    }
+
+    criteriaConfig.forEach(config => {
+      const criteriaScore = criteriaScores[config.key];
+      if (criteriaScore.average < 8) {
+        const lowSubCriteria = config.subCriteria.filter(sub => 
+          criteriaScores[config.key][sub.key] < 8
+        );
+        
+        if (lowSubCriteria.length > 0) {
+          feedback.push(`\n📋 ${config.label} (Nota: ${criteriaScore.average.toFixed(1)}):`);
+          
+          lowSubCriteria.forEach(sub => {
+            const score = criteriaScores[config.key][sub.key];
+            const suggestion = improvementSuggestions[config.key as keyof typeof improvementSuggestions]?.[sub.key as keyof any];
+            feedback.push(`   • ${sub.label} (${score}): ${suggestion}`);
+          });
+        }
+      }
+    });
+
+    if (classification === 'rejected') {
+      feedback.push('\n💡 Recomendação: Participe de um treinamento adicional focado nos pontos de melhoria identificados antes de uma nova avaliação.');
+    } else if (classification === 'reevaluation') {
+      feedback.push('\n💡 Recomendação: Dedique tempo extra aos pontos mencionados e solicite uma reavaliação em 30 dias.');
+    }
+
+    return feedback;
   };
 
   const calculateResults = () => {
@@ -174,17 +287,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
       classification = 'rejected';
     }
 
-    const feedback: string[] = [];
-    criteriaConfig.forEach(config => {
-      const score = criteria[config.key].average;
-      if (score < 8) {
-        // Identificar subtópicos com nota baixa
-        const lowSubCriteria = config.subCriteria.filter(sub => criteria[config.key][sub.key] < 8);
-        if (lowSubCriteria.length > 0) {
-          feedback.push(`${config.label}: Melhorar ${lowSubCriteria.map(sub => sub.label.toLowerCase()).join(', ')}.`);
-        }
-      }
-    });
+    const feedback = generateDetailedFeedback(classification, criteria);
 
     return { finalScore, classification, feedback };
   };
@@ -201,7 +304,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
       trainingDate: formData.trainingDate!,
       daysCount: parseInt(formData.daysCount),
       attendance,
-      hoursCount: parseInt(formData.hoursCount),
+      hoursCount,
       candidatePhoto: formData.candidatePhoto || undefined,
       candidatePhotoUrl: photoPreview || undefined,
       criteria: criteria as EvaluationData['criteria'],
@@ -294,15 +397,16 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
           </div>
           
           <div>
-            <Label htmlFor="hoursCount">Quantidade de Horas</Label>
+            <Label htmlFor="hoursCount">Quantidade de Horas (Automático)</Label>
             <Input
               id="hoursCount"
               type="number"
-              value={formData.hoursCount}
-              onChange={(e) => handleInputChange('hoursCount', e.target.value)}
-              required
-              className="mt-1"
+              value={hoursCount}
+              readOnly
+              className="mt-1 bg-gray-100"
+              title="Calculado automaticamente: 8 horas por dia"
             />
+            <p className="text-xs text-gray-600 mt-1">8 horas por dia de treinamento</p>
           </div>
         </div>
 
@@ -344,24 +448,43 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
               </div>
             )}
             
-            <label htmlFor="photo-upload">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="cursor-pointer hover:bg-opacity-10"
-                style={{borderColor: '#103722', color: '#103722'}}
-                asChild
-              >
-                <span>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Foto
-                </span>
-              </Button>
-            </label>
+            <div className="flex space-x-2">
+              {isMobile && (
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleCameraCapture}
+                  className="hover:bg-opacity-10"
+                  style={{borderColor: '#103722', color: '#103722'}}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Câmera
+                </Button>
+              )}
+              
+              <label htmlFor="photo-upload">
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="sm" 
+                  className="cursor-pointer hover:bg-opacity-10"
+                  style={{borderColor: '#103722', color: '#103722'}}
+                  asChild
+                >
+                  <span>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload
+                  </span>
+                </Button>
+              </label>
+            </div>
+            
             <input
               id="photo-upload"
               type="file"
               accept="image/*"
+              capture={isMobile ? "user" : undefined}
               onChange={handlePhotoUpload}
               className="hidden"
             />
