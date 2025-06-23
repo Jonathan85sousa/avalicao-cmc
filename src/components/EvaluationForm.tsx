@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Upload, User, Camera } from 'lucide-react';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { EvaluationData, CriteriaConfig } from '@/types/evaluation';
 import { cn } from '@/lib/utils';
 
@@ -369,7 +369,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.trainingDate ? format(formData.trainingDate, "dd/MM/yyyy") : "Selecionar data"}
+                  {formData.trainingDate ? format(formData.trainingDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "Selecionar data"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -378,7 +378,13 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
                   selected={formData.trainingDate}
                   onSelect={(date) => handleInputChange('trainingDate', date)}
                   initialFocus
-                  className={cn("p-3 pointer-events-auto")}
+                  locale={ptBR}
+                  className="p-3 pointer-events-auto"
+                  weekStartsOn={0}
+                  formatters={{
+                    formatCaption: (date) => format(date, "MMMM yyyy", { locale: ptBR }),
+                    formatWeekdayName: (date) => format(date, "EEEEEE", { locale: ptBR }),
+                  }}
                 />
               </PopoverContent>
             </Popover>
