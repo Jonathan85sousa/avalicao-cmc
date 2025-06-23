@@ -223,7 +223,7 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
               <p className="text-3xl font-bold" style={{color: '#103722'}}>
                 Nota Final: <span style={{color: '#006633'}}>{data.finalScore.toFixed(1)}</span>
               </p>
-              <p className="text-gray-600 mt-1">Média ponderada dos critérios avaliados</p>
+              <p className="text-gray-600 mt-1"></p>
             </div>
           </div>
 
