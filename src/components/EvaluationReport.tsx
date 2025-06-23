@@ -291,10 +291,10 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
               <div className="mt-6 p-4 bg-yellow-100 rounded-lg border border-yellow-200">
                 <h4 className="font-semibold text-yellow-800 mb-2">💡 Recomendações para Reavaliação:</h4>
                 <ul className="text-yellow-700 space-y-1 text-sm">
-                  <li>• Dedicar 2-4 semanas aos pontos de melhoria identificados</li>
+                  <li>• Dedicar uma semanas aos pontos de melhoria identificados</li>
                   <li>• Praticar com supervisão nas áreas com menor pontuação</li>
                   <li>• Solicitar feedback contínuo durante o período de preparação</li>
-                  <li>• Agendar reavaliação em até 30 dias</li>
+                  <li>• Agendar reavaliação em até uma semana</li>
                 </ul>
               </div>
             )}
