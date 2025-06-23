@@ -279,10 +279,11 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
               <div className="mt-6 p-4 bg-red-100 rounded-lg border border-red-200">
                 <h4 className="font-semibold text-red-800 mb-2">⚠️ Próximos Passos Obrigatórios:</h4>
                 <ul className="text-red-700 space-y-1 text-sm">
-                  <li>• Completar treinamento adicional nos pontos identificados</li>
+                  <li>• Rever pontos de melhoria citados</li>
                   <li>• Buscar mentoria especializada para desenvolvimento das competências</li>
-                  <li>• Solicitar nova avaliação após pelo menos 60 dias de preparação</li>
+                  <li>• Identificados esse ponto como insuficiente para aprovação</li>
                   <li>• Apresentar certificados de cursos complementares realizados</li>
+                  <li>• Procurar melhorias nas áreas avaliadas</li>
                 </ul>
               </div>
             )}
