@@ -21,22 +21,19 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
         return {
           label: 'Aprovado',
           icon: CheckCircle,
-          colorClass: 'bg-green-100 border-green-200 text-green-800',
-          emoji: '✅'
+          colorClass: 'bg-green-100 border-green-200 text-green-800'
         };
       case 'reevaluation':
         return {
           label: 'Reavaliação',
           icon: AlertTriangle,
-          colorClass: 'bg-yellow-100 border-yellow-200 text-yellow-800',
-          emoji: '⚠️'
+          colorClass: 'bg-yellow-100 border-yellow-200 text-yellow-800'
         };
       case 'rejected':
         return {
           label: 'Reprovado',
           icon: XCircle,
-          colorClass: 'bg-red-100 border-red-200 text-red-800',
-          emoji: '❌'
+          colorClass: 'bg-red-100 border-red-200 text-red-800'
         };
     }
   };
@@ -226,21 +223,21 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
 
         {/* Resultado da Avaliação */}
         <Card className="p-8">
-          <div className="text-center mb-6">
+          <div className="w-full flex justify-center mb-6">
             <div 
               data-classification-title
-              className={`inline-flex items-center px-6 py-3 rounded-full text-2xl font-bold border-2 ${classificationDetails.colorClass}`}
+              className={`flex items-center justify-center px-6 py-3 rounded-full text-2xl font-bold border-2 ${classificationDetails.colorClass}`}
             >
               <ClassificationIcon className="h-8 w-8 mr-3" />
-              <span>{classificationDetails.emoji} {classificationDetails.label}</span>
+              <span>{classificationDetails.label}</span>
             </div>
+          </div>
             
-            <div className="mt-4">
-              <p className="text-3xl font-bold text-green-800">
-                Nota Final: <span className="text-green-600">{data.finalScore.toFixed(1)}</span>
-              </p>
-              <p className="text-gray-600 mt-1"></p>
-            </div>
+          <div className="text-center mt-4">
+            <p className="text-3xl font-bold text-green-800">
+              Nota Final: <span className="text-green-600">{data.finalScore.toFixed(1)}</span>
+            </p>
+            <p className="text-gray-600 mt-1"></p>
           </div>
 
           {/* Detalhes dos Critérios com Subtópicos */}
