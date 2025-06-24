@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -357,27 +358,36 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
             />
           </div>
           
-          <div>
+          <div className="sm:col-span-2 md:col-span-1">
             <Label>Data do Treinamento</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal mt-1",
+                    "w-full justify-start text-left font-normal mt-1 h-10 px-3 text-sm",
+                    "sm:max-w-none md:max-w-full",
                     !formData.trainingDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.trainingDate ? format(formData.trainingDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "Selecionar data"}
+                  <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="truncate">
+                    {formData.trainingDate ? format(formData.trainingDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "Selecionar data"}
+                  </span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent 
+                className="w-auto p-0 max-w-[95vw]" 
+                align="start"
+                side="bottom"
+                sideOffset={4}
+              >
                 <Calendar
                   mode="single"
                   selected={formData.trainingDate}
                   onSelect={(date) => handleInputChange('trainingDate', date)}
                   initialFocus
+                  className="rounded-md border-0"
                 />
               </PopoverContent>
             </Popover>
