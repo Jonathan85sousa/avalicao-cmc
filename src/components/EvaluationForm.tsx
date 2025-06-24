@@ -378,13 +378,6 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
                   selected={formData.trainingDate}
                   onSelect={(date) => handleInputChange('trainingDate', date)}
                   initialFocus
-                  locale={ptBR}
-                  className="p-3 pointer-events-auto"
-                  weekStartsOn={0}
-                  formatters={{
-                    formatCaption: (date) => format(date, "MMMM yyyy", { locale: ptBR }),
-                    formatWeekdayName: (date) => format(date, "EEEEEE", { locale: ptBR }),
-                  }}
                 />
               </PopoverContent>
             </Popover>
