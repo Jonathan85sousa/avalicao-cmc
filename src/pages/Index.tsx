@@ -16,9 +16,9 @@ const Index = () => {
     setCurrentStep('report');
   };
 
-  const handleBackToForm = () => {
+  const handleEditForm = () => {
     setCurrentStep('form');
-    setEvaluationData(null);
+    // Não limpar evaluationData para manter os dados para edição
   };
 
   return (
@@ -38,14 +38,17 @@ const Index = () => {
                 </p>
               </div>
               
-              <EvaluationForm onSubmit={handleFormSubmit} />
+              <EvaluationForm 
+                onSubmit={handleFormSubmit} 
+                initialData={evaluationData}
+              />
             </Card>
           </div>
         ) : (
           evaluationData && (
             <EvaluationReport 
               data={evaluationData} 
-              onBack={handleBackToForm}
+              onEdit={handleEditForm}
             />
           )
         )}

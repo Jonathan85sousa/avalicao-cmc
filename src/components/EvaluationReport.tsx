@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,10 +11,10 @@ import html2canvas from 'html2canvas';
 
 interface EvaluationReportProps {
   data: EvaluationData;
-  onBack: () => void;
+  onEdit: () => void;
 }
 
-const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => {
+const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => {
   const getClassificationDetails = () => {
     switch (data.classification) {
       case 'approved':
@@ -51,6 +50,18 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
     const element = document.getElementById('evaluation-report');
     if (element) {
       try {
+        // Temporariamente mostrar elementos ocultos para exportação
+        const hiddenElements = element.querySelectorAll('.print\\:block');
+        hiddenElements.forEach(el => {
+          (el as HTMLElement).style.display = 'block';
+        });
+
+        // Garantir que o título da classificação seja visível
+        const classificationElement = element.querySelector('[data-classification-title]');
+        if (classificationElement) {
+          (classificationElement as HTMLElement).style.display = 'flex';
+        }
+
         const canvas = await html2canvas(element, {
           height: element.scrollHeight,
           width: element.scrollWidth,
@@ -64,6 +75,11 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
           removeContainer: true
         });
         
+        // Restaurar visibilidade original
+        hiddenElements.forEach(el => {
+          (el as HTMLElement).style.display = '';
+        });
+
         const link = document.createElement('a');
         link.download = `relatorio-${data.candidateName.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'dd-MM-yyyy')}.png`;
         link.href = canvas.toDataURL('image/png');
@@ -130,11 +146,11 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
       <div className="flex justify-between items-center print:hidden">
         <Button 
           variant="outline" 
-          onClick={onBack}
+          onClick={onEdit}
           className="flex items-center space-x-2 hover:bg-opacity-10 border-green-800 text-green-800"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Voltar ao Formulário</span>
+          <span>Editar Formulário</span>
         </Button>
         
         <div className="flex space-x-2">
@@ -212,6 +228,7 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onBack }) => 
         <Card className="p-8">
           <div className="text-center mb-6">
             <div 
+              data-classification-title
               className={`inline-flex items-center px-6 py-3 rounded-full text-2xl font-bold border-2 ${classificationDetails.colorClass}`}
             >
               <ClassificationIcon className="h-8 w-8 mr-3" />

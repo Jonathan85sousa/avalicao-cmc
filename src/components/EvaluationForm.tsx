@@ -74,22 +74,29 @@ const criteriaConfig: CriteriaConfig[] = [
 
 interface EvaluationFormProps {
   onSubmit: (data: EvaluationData) => void;
+  initialData?: EvaluationData | null;
 }
 
-const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
+const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }) => {
   const [formData, setFormData] = useState({
-    trainingTitle: '',
-    candidateName: '',
-    age: '',
-    trainingDate: '',
-    daysCount: '',
-    candidatePhoto: null as File | null,
+    trainingTitle: initialData?.trainingTitle || '',
+    candidateName: initialData?.candidateName || '',
+    age: initialData?.age?.toString() || '',
+    trainingDate: initialData?.trainingDate ? initialData.trainingDate.toISOString().split('T')[0] : '',
+    daysCount: initialData?.daysCount?.toString() || '',
+    candidatePhoto: initialData?.candidatePhoto || null as File | null,
   });
 
-  const [attendance, setAttendance] = useState<boolean[]>([]);
+  const [attendance, setAttendance] = useState<boolean[]>(
+    initialData?.attendance || []
+  );
   
-  // Inicializar critérios com subtópicos
+  // Inicializar critérios com dados existentes ou valores padrão
   const [criteria, setCriteria] = useState(() => {
+    if (initialData?.criteria) {
+      return initialData.criteria;
+    }
+    
     const initialCriteria: any = {};
     criteriaConfig.forEach(config => {
       initialCriteria[config.key] = {
@@ -102,7 +109,9 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
     return initialCriteria;
   });
 
-  const [photoPreview, setPhotoPreview] = useState<string>('');
+  const [photoPreview, setPhotoPreview] = useState<string>(
+    initialData?.candidatePhotoUrl || ''
+  );
 
   // Calcular horas automaticamente (8h por dia)
   const hoursCount = parseInt(formData.daysCount) * 8 || 0;
@@ -235,17 +244,17 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
     }
 
     criteriaConfig.forEach(config => {
-      const criteriaScore = criteriaScores[config.key];
+      const criteriaScore = criteria[config.key];
       if (criteriaScore.average < 8) {
         const lowSubCriteria = config.subCriteria.filter(sub => 
-          criteriaScores[config.key][sub.key] < 8
+          criteria[config.key][sub.key] < 8
         );
         
         if (lowSubCriteria.length > 0) {
           feedback.push(`\n📋 ${config.label} (Nota: ${criteriaScore.average.toFixed(1)}):`);
           
           lowSubCriteria.forEach(sub => {
-            const score = criteriaScores[config.key][sub.key];
+            const score = criteria[config.key][sub.key];
             const suggestion = improvementSuggestions[config.key as keyof typeof improvementSuggestions]?.[sub.key as keyof any];
             feedback.push(`   • ${sub.label} (${score}): ${suggestion}`);
           });
