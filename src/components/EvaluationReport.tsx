@@ -302,7 +302,7 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
                 <ul className="text-red-700 space-y-1 text-sm">
                   <li>• Rever pontos de melhoria citados</li>
                   <li>• Buscar mentoria especializada para desenvolvimento das competências</li>
-                  <li>• Identificados esses ponto como insuficiente para aprovação</li>
+                  <li>• Identificados esses pontos como insuficiente para aprovação</li>
                   <li>• Apresentar certificados de cursos complementares realizados</li>
                   <li>• Procurar melhorias nas áreas avaliadas</li>
                 </ul>
