@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,11 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Upload, User, Camera } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { Upload, User, Camera } from 'lucide-react';
 import { EvaluationData, CriteriaConfig } from '@/types/evaluation';
 import { cn } from '@/lib/utils';
 
@@ -42,7 +37,7 @@ const criteriaConfig: CriteriaConfig[] = [
     subCriteria: [
       { key: 'clareza', label: 'Clareza', description: 'Comunicação clara e objetiva' },
       { key: 'assertividade', label: 'Assertividade', description: 'Firmeza e confiança na comunicação' },
-      { key: 'consistencia', label: 'Consistência', description: 'Manutenção do padrão comunicativo' }
+      { key: 'consistencia', label: 'Manutenção do padrão comunicativo' }
     ]
   },
   {
@@ -86,7 +81,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
     trainingTitle: '',
     candidateName: '',
     age: '',
-    trainingDate: undefined as Date | undefined,
+    trainingDate: '',
     daysCount: '',
     candidatePhoto: null as File | null,
   });
@@ -298,11 +293,14 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
     
     const { finalScore, classification, feedback } = calculateResults();
     
+    // Converter string da data para Date object
+    const trainingDateObj = formData.trainingDate ? new Date(formData.trainingDate) : new Date();
+    
     const evaluationData: EvaluationData = {
       trainingTitle: formData.trainingTitle,
       candidateName: formData.candidateName,
       age: parseInt(formData.age),
-      trainingDate: formData.trainingDate!,
+      trainingDate: trainingDateObj,
       daysCount: parseInt(formData.daysCount),
       attendance,
       hoursCount,
@@ -358,39 +356,16 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit }) => {
             />
           </div>
           
-          <div className="sm:col-span-2 md:col-span-1">
-            <Label>Data do Treinamento</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal mt-1 h-10 px-3 text-sm",
-                    "sm:max-w-none md:max-w-full",
-                    !formData.trainingDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-                  <span className="truncate">
-                    {formData.trainingDate ? format(formData.trainingDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "Selecionar data"}
-                  </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-auto p-0 max-w-[95vw]" 
-                align="start"
-                side="bottom"
-                sideOffset={4}
-              >
-                <Calendar
-                  mode="single"
-                  selected={formData.trainingDate}
-                  onSelect={(date) => handleInputChange('trainingDate', date)}
-                  initialFocus
-                  className="rounded-md border-0"
-                />
-              </PopoverContent>
-            </Popover>
+          <div>
+            <Label htmlFor="trainingDate">Data do Treinamento</Label>
+            <Input
+              id="trainingDate"
+              type="date"
+              value={formData.trainingDate}
+              onChange={(e) => handleInputChange('trainingDate', e.target.value)}
+              required
+              className="mt-1"
+            />
           </div>
           
           <div>
