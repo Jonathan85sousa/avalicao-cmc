@@ -37,7 +37,7 @@ const criteriaConfig: CriteriaConfig[] = [
     subCriteria: [
       { key: 'clareza', label: 'Clareza', description: 'Comunicação clara e objetiva' },
       { key: 'assertividade', label: 'Assertividade', description: 'Firmeza e confiança na comunicação' },
-      { key: 'consistencia', label: 'Manutenção do padrão comunicativo' }
+      { key: 'consistencia', label: 'Consistência', description: 'Manutenção do padrão comunicativo' }
     ]
   },
   {
