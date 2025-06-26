@@ -276,25 +276,51 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
         {/* Feedback Detalhado */}
         {data.feedback.length > 0 && (
           <Card className={`p-6 bg-gradient-to-r border-2 ${
-            data.classification === 'rejected' 
+            data.classification === 'approved'
+              ? 'from-green-50 to-emerald-100 border-green-500'
+              : data.classification === 'rejected' 
               ? 'from-red-50 to-red-100 border-red-500' 
               : 'from-orange-50 to-yellow-100 border-yellow-500'
           }`}>
             <h3 className={`text-xl font-semibold mb-6 ${
-              data.classification === 'rejected' ? 'text-red-600' : 'text-yellow-600'
+              data.classification === 'approved'
+                ? 'text-green-600'
+                : data.classification === 'rejected' 
+                ? 'text-red-600' 
+                : 'text-yellow-600'
             }`}>
-              {data.classification === 'rejected' ? '🔴 Plano de Melhoria' : '📋 Pontos de Aprimoramento'}
+              {data.classification === 'approved' 
+                ? '✅ Resumo da Aprovação' 
+                : data.classification === 'rejected' 
+                ? '🔴 Plano de Melhoria' 
+                : '📋 Pontos de Aprimoramento'}
             </h3>
             
             <div className="space-y-4">
               {data.feedback.map((item, index) => (
                 <div key={index} className={`p-4 bg-white rounded-lg border-l-4 ${
-                  data.classification === 'rejected' ? 'border-l-red-500' : 'border-l-yellow-500'
+                  data.classification === 'approved'
+                    ? 'border-l-green-500'
+                    : data.classification === 'rejected' 
+                    ? 'border-l-red-500' 
+                    : 'border-l-yellow-500'
                 }`}>
                   <p className="text-gray-800 whitespace-pre-line leading-relaxed">{item}</p>
                 </div>
               ))}
             </div>
+
+            {data.classification === 'approved' && (
+              <div className="mt-6 p-4 bg-green-100 rounded-lg border border-green-200">
+                <h4 className="font-semibold text-green-800 mb-2">🎯 Recomendações para Continuidade:</h4>
+                <ul className="text-green-700 space-y-1 text-sm">
+                  <li>• Manter o padrão de excelência demonstrado durante o treinamento</li>
+                  <li>• Buscar oportunidades de aperfeiçoamento contínuo na área</li>
+                  <li>• Compartilhar conhecimentos com novos condutores em formação</li>
+                  <li>• Participar de capacitações complementares quando disponíveis</li>
+                </ul>
+              </div>
+            )}
 
             {data.classification === 'rejected' && (
               <div className="mt-6 p-4 bg-red-100 rounded-lg border border-red-200">

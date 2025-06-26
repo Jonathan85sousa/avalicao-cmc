@@ -1,76 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
-import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Upload, User, Camera } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, Upload, User, Clock, MapPin, Users } from 'lucide-react';
 import { EvaluationData, CriteriaConfig } from '@/types/evaluation';
-import { cn } from '@/lib/utils';
-
-const criteriaConfig: CriteriaConfig[] = [
-  {
-    key: 'seguranca',
-    label: 'Segurança',
-    weight: 2,
-    subCriteria: [
-      { key: 'prevencao', label: 'Prevenção', description: 'Identificação e prevenção de riscos' },
-      { key: 'epi', label: 'EPI', description: 'Uso correto de equipamentos de proteção' },
-      { key: 'procedimentos', label: 'Procedimentos', description: 'Seguimento de protocolos de segurança' }
-    ]
-  },
-  {
-    key: 'tecnica',
-    label: 'Técnica',
-    weight: 2,
-    subCriteria: [
-      { key: 'conhecimento', label: 'Conhecimento', description: 'Domínio técnico teórico' },
-      { key: 'execucao', label: 'Execução', description: 'Aplicação prática das técnicas' },
-      { key: 'eficiencia', label: 'Eficiência', description: 'Otimização de tempo e recursos' }
-    ]
-  },
-  {
-    key: 'comunicacao',
-    label: 'Comunicação',
-    weight: 1,
-    subCriteria: [
-      { key: 'clareza', label: 'Clareza', description: 'Comunicação clara e objetiva' },
-      { key: 'assertividade', label: 'Assertividade', description: 'Firmeza e confiança na comunicação' },
-      { key: 'consistencia', label: 'Consistência', description: 'Manutenção do padrão comunicativo' }
-    ]
-  },
-  {
-    key: 'aptidaoFisica',
-    label: 'Aptidão Física',
-    weight: 1,
-    subCriteria: [
-      { key: 'resistencia', label: 'Resistência', description: 'Capacidade de sustentação do esforço' },
-      { key: 'forca', label: 'Força', description: 'Potência física demonstrada' },
-      { key: 'agilidade', label: 'Agilidade', description: 'Velocidade e coordenação motora' }
-    ]
-  },
-  {
-    key: 'lideranca',
-    label: 'Liderança',
-    weight: 1,
-    subCriteria: [
-      { key: 'motivacao', label: 'Motivação', description: 'Capacidade de inspirar e engajar' },
-      { key: 'gestaoConflitos', label: 'Gestão de Conflitos', description: 'Resolução de situações tensas' },
-      { key: 'tomadaDecisao', label: 'Tomada de Decisão', description: 'Decisões rápidas e assertivas' }
-    ]
-  },
-  {
-    key: 'operacional',
-    label: 'Operacional',
-    weight: 1,
-    subCriteria: [
-      { key: 'equipagem', label: 'Equipagem', description: 'Preparação e checagem de equipamentos' },
-      { key: 'lancamento', label: 'Lançamento', description: 'Procedimentos de início da atividade' },
-      { key: 'frenagem', label: 'Frenagem', description: 'Controle e parada segura' }
-    ]
-  }
-];
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface EvaluationFormProps {
   onSubmit: (data: EvaluationData) => void;
@@ -78,523 +16,562 @@ interface EvaluationFormProps {
 }
 
 const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }) => {
-  const [formData, setFormData] = useState({
-    trainingTitle: initialData?.trainingTitle || '',
-    candidateName: initialData?.candidateName || '',
-    age: initialData?.age?.toString() || '',
-    trainingDate: initialData?.trainingDate ? initialData.trainingDate.toISOString().split('T')[0] : '',
-    daysCount: initialData?.daysCount?.toString() || '',
-    candidatePhoto: initialData?.candidatePhoto || null as File | null,
+  const [formData, setFormData] = useState<Partial<EvaluationData>>({
+    trainingTitle: '',
+    candidateName: '',
+    age: 0,
+    trainingDate: new Date(),
+    daysCount: 1,
+    attendance: [true],
+    hoursCount: 8,
+    criteria: {
+      seguranca: { prevencao: 0, epi: 0, procedimentos: 0, average: 0 },
+      tecnica: { conhecimento: 0, execucao: 0, eficiencia: 0, average: 0 },
+      comunicacao: { clareza: 0, assertividade: 0, consistencia: 0, average: 0 },
+      aptidaoFisica: { resistencia: 0, forca: 0, agilidade: 0, average: 0 },
+      lideranca: { motivacao: 0, gestaoConflitos: 0, tomadaDecisao: 0, average: 0 },
+      operacional: { equipagem: 0, lancamento: 0, frenagem: 0, average: 0 }
+    },
+    finalScore: 0,
+    classification: 'rejected',
+    feedback: []
   });
 
-  const [attendance, setAttendance] = useState<boolean[]>(
-    initialData?.attendance || []
-  );
-  
-  // Inicializar critérios com dados existentes ou valores padrão
-  const [criteria, setCriteria] = useState(() => {
-    if (initialData?.criteria) {
-      return initialData.criteria;
-    }
-    
-    const initialCriteria: any = {};
-    criteriaConfig.forEach(config => {
-      initialCriteria[config.key] = {
-        average: 5
-      };
-      config.subCriteria.forEach(sub => {
-        initialCriteria[config.key][sub.key] = 5;
-      });
-    });
-    return initialCriteria;
-  });
+  const [candidatePhoto, setCandidatePhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>('');
 
-  const [photoPreview, setPhotoPreview] = useState<string>(
-    initialData?.candidatePhotoUrl || ''
-  );
-
-  // Calcular horas automaticamente (8h por dia)
-  const hoursCount = parseInt(formData.daysCount) * 8 || 0;
-
-  // Calcular taxa de presença
-  const attendanceRate = attendance.length > 0 ? (attendance.filter(Boolean).length / attendance.length) * 100 : 100;
-
-  // Calcular média quando subtópicos mudarem
-  const updateCriteriaAverage = (criteriaKey: string, subKey: string, value: number) => {
-    setCriteria(prev => {
-      const updated = { ...prev };
-      updated[criteriaKey] = { ...updated[criteriaKey], [subKey]: value };
-      
-      // Calcular média dos subtópicos
-      const config = criteriaConfig.find(c => c.key === criteriaKey);
-      if (config) {
-        const subValues = config.subCriteria.map(sub => updated[criteriaKey][sub.key]);
-        const average = subValues.reduce((sum, val) => sum + val, 0) / subValues.length;
-        updated[criteriaKey].average = average;
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+      if (initialData.candidatePhotoUrl) {
+        setPhotoPreview(initialData.candidatePhotoUrl);
       }
-      
-      return updated;
-    });
-  };
-
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    if (field === 'daysCount') {
-      const days = parseInt(value) || 0;
-      setAttendance(new Array(days).fill(true));
     }
-  };
+  }, [initialData]);
 
-  // Verificar se é dispositivo móvel
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const criteriaConfig: CriteriaConfig[] = [
+    {
+      key: 'seguranca',
+      label: 'Segurança (Peso 2)',
+      weight: 2,
+      subCriteria: [
+        { key: 'prevencao', label: 'Prevenção', description: 'Identificação e prevenção de riscos' },
+        { key: 'epi', label: 'EPI', description: 'Uso correto de equipamentos de proteção' },
+        { key: 'procedimentos', label: 'Procedimentos', description: 'Seguimento de protocolos de segurança' }
+      ]
+    },
+    {
+      key: 'tecnica',
+      label: 'Técnica (Peso 2)',
+      weight: 2,
+      subCriteria: [
+        { key: 'conhecimento', label: 'Conhecimento', description: 'Domínio teórico da atividade' },
+        { key: 'execucao', label: 'Execução', description: 'Aplicação prática das técnicas' },
+        { key: 'eficiencia', label: 'Eficiência', description: 'Otimização de tempo e recursos' }
+      ]
+    },
+    {
+      key: 'comunicacao',
+      label: 'Comunicação',
+      weight: 1,
+      subCriteria: [
+        { key: 'clareza', label: 'Clareza', description: 'Comunicação clara e objetiva' },
+        { key: 'assertividade', label: 'Assertividade', description: 'Firmeza nas orientações' },
+        { key: 'consistencia', label: 'Consistência', description: 'Coerência na comunicação' }
+      ]
+    },
+    {
+      key: 'aptidaoFisica',
+      label: 'Aptidão Física',
+      weight: 1,
+      subCriteria: [
+        { key: 'resistencia', label: 'Resistência', description: 'Capacidade de resistência física' },
+        { key: 'forca', label: 'Força', description: 'Força física adequada' },
+        { key: 'agilidade', label: 'Agilidade', description: 'Agilidade e coordenação motora' }
+      ]
+    },
+    {
+      key: 'lideranca',
+      label: 'Liderança',
+      weight: 1,
+      subCriteria: [
+        { key: 'motivacao', label: 'Motivação', description: 'Capacidade de motivar o grupo' },
+        { key: 'gestaoConflitos', label: 'Gestão de Conflitos', description: 'Resolução de conflitos' },
+        { key: 'tomadaDecisao', label: 'Tomada de Decisão', description: 'Decisões rápidas e assertivas' }
+      ]
+    },
+    {
+      key: 'operacional',
+      label: 'Operacional',
+      weight: 1,
+      subCriteria: [
+        { key: 'equipagem', label: 'Equipagem', description: 'Preparação e organização de equipamentos' },
+        { key: 'lancamento', label: 'Lançamento', description: 'Execução do lançamento/início da atividade' },
+        { key: 'frenagem', label: 'Frenagem', description: 'Controle e finalização da atividade' }
+      ]
+    }
+  ];
+
+  const criteriaLabels = {
+    seguranca: 'Segurança',
+    tecnica: 'Técnica',
+    comunicacao: 'Comunicação',
+    aptidaoFisica: 'Aptidão Física',
+    lideranca: 'Liderança',
+    operacional: 'Operacional'
+  };
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setFormData(prev => ({ ...prev, candidatePhoto: file }));
-      const url = URL.createObjectURL(file);
-      setPhotoPreview(url);
-    }
-  };
-
-  const handleCameraCapture = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user' } 
-      });
-      
-      // Criar um elemento de vídeo temporário para capturar a imagem
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      video.play();
-      
-      video.onloadedmetadata = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(video, 0, 0);
-        
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
-            setFormData(prev => ({ ...prev, candidatePhoto: file }));
-            const url = URL.createObjectURL(file);
-            setPhotoPreview(url);
-          }
-        }, 'image/jpeg', 0.8);
-        
-        // Parar o stream da câmera
-        stream.getTracks().forEach(track => track.stop());
+      setCandidatePhoto(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target?.result as string);
       };
-    } catch (error) {
-      console.error('Erro ao acessar a câmera:', error);
-      // Fallback para upload de arquivo
-      document.getElementById('photo-upload')?.click();
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleAttendanceChange = (dayIndex: number, present: boolean) => {
-    setAttendance(prev => {
-      const updated = [...prev];
-      updated[dayIndex] = present;
-      return updated;
+  const updateCriteriaScore = (criteriaKey: string, subKey: string, value: number) => {
+    setFormData(prev => {
+      const newCriteria = { ...prev.criteria };
+      if (newCriteria[criteriaKey as keyof typeof newCriteria]) {
+        (newCriteria[criteriaKey as keyof typeof newCriteria] as any)[subKey] = value;
+        
+        // Calcular média do critério
+        const criteriaData = newCriteria[criteriaKey as keyof typeof newCriteria] as any;
+        const subValues = Object.entries(criteriaData)
+          .filter(([key]) => key !== 'average')
+          .map(([, val]) => val as number);
+        
+        criteriaData.average = subValues.reduce((sum, val) => sum + val, 0) / subValues.length;
+      }
+      
+      return { ...prev, criteria: newCriteria };
     });
   };
 
-  const generateDetailedFeedback = (classification: string, criteriaScores: any, attendanceRate: number) => {
-    const feedback: string[] = [];
-    
-    const improvementSuggestions = {
-      seguranca: {
-        prevencao: 'Realize cursos de identificação de riscos e análise de cenários perigosos.',
-        epi: 'Pratique o uso correto dos equipamentos de proteção individual e faça treinamentos específicos.',
-        procedimentos: 'Estude e pratique os protocolos de segurança estabelecidos.'
-      },
-      tecnica: {
-        conhecimento: 'Dedique mais tempo ao estudo teórico e participe de workshops técnicos.',
-        execucao: 'Pratique as técnicas com supervisão e busque mentoria especializada.',
-        eficiencia: 'Trabalhe na otimização de processos e gestão de tempo durante as atividades.'
-      },
-      comunicacao: {
-        clareza: 'Pratique técnicas de oratória e comunicação assertiva.',
-        assertividade: 'Desenvolva confiança através de exercícios de liderança e comunicação.',
-        consistencia: 'Mantenha um padrão comunicativo através de prática regular.'
-      },
-      aptidaoFisica: {
-        resistencia: 'Implemente um programa de condicionamento físico focado em resistência.',
-        forca: 'Desenvolva um plano de treinamento de força específico para a atividade.',
-        agilidade: 'Pratique exercícios de coordenação motora e velocidade.'
-      },
-      lideranca: {
-        motivacao: 'Desenvolva habilidades de coaching e técnicas motivacionais.',
-        gestaoConflitos: 'Estude técnicas de mediação e resolução de conflitos.',
-        tomadaDecisao: 'Pratique cenários de tomada de decisão sob pressão.'
-      },
-      operacional: {
-        equipagem: 'Pratique os procedimentos de checagem e preparação de equipamentos.',
-        lancamento: 'Revise e pratique os protocolos de início das atividades.',
-        frenagem: 'Treine técnicas de controle e parada segura.'
-      }
-    };
-
-    // Feedback específico para reprovação por presença
-    if (attendanceRate < 70) {
-      feedback.push('REPROVADO - Presença insuficiente para aprovação:');
-      feedback.push(`\nPresença: ${attendanceRate.toFixed(1)}% (mínimo exigido: 70%)`);
-      feedback.push('\nPara aprovação é necessário:');
-      feedback.push('• Participar integralmente de um novo treinamento');
-      feedback.push('• Manter presença mínima de 70% em todas as atividades');
-      feedback.push('• Demonstrar comprometimento com o cronograma estabelecido');
-      return feedback;
-    }
-
-    if (classification === 'approved') {
-      feedback.push('APROVADO - Parabéns pelo excelente desempenho!');
-      feedback.push('\nPontos fortes identificados:');
-      
-      criteriaConfig.forEach(config => {
-        const criteriaScore = criteria[config.key];
-        if (criteriaScore.average >= 8) {
-          const strongSubCriteria = config.subCriteria.filter(sub => 
-            criteria[config.key][sub.key] >= 8
-          );
-          
-          if (strongSubCriteria.length > 0) {
-            feedback.push(`\n${config.label} (Nota: ${criteriaScore.average.toFixed(1)}):`);
-            strongSubCriteria.forEach(sub => {
-              const score = criteria[config.key][sub.key];
-              feedback.push(`   • ${sub.label} (${score}) - Excelente desempenho`);
-            });
-          }
-        }
-      });
-
-      feedback.push('\nRecomendações para manutenção da excelência:');
-      feedback.push('• Continue praticando as técnicas aprendidas regularmente');
-      feedback.push('• Mantenha-se atualizado com novos procedimentos e regulamentações');
-      feedback.push('• Compartilhe seu conhecimento com outros profissionais');
-      feedback.push('• Participe de treinamentos de atualização periodicamente');
-      
-    } else if (classification === 'rejected') {
-      feedback.push('REPROVADO - Ações necessárias para aprovação:');
-    } else if (classification === 'reevaluation') {
-      feedback.push('REAVALIAÇÃO - Pontos que precisam ser aprimorados:');
-    }
-
-    if (classification !== 'approved') {
-      criteriaConfig.forEach(config => {
-        const criteriaScore = criteria[config.key];
-        if (criteriaScore.average < 8) {
-          const lowSubCriteria = config.subCriteria.filter(sub => 
-            criteria[config.key][sub.key] < 8
-          );
-          
-          if (lowSubCriteria.length > 0) {
-            feedback.push(`\n${config.label} (Nota: ${criteriaScore.average.toFixed(1)}):`);
-            
-            lowSubCriteria.forEach(sub => {
-              const score = criteria[config.key][sub.key];
-              const suggestion = improvementSuggestions[config.key as keyof typeof improvementSuggestions]?.[sub.key as keyof any];
-              feedback.push(`   • ${sub.label} (${score}): ${suggestion}`);
-            });
-          }
-        }
-      });
-
-      if (classification === 'rejected') {
-        feedback.push('\nRecomendação: Participe de um treinamento adicional focado nos pontos de melhoria identificados antes de uma nova avaliação.');
-      } else if (classification === 'reevaluation') {
-        feedback.push('\nRecomendação: Dedique tempo extra aos pontos mencionados e solicite uma reavaliação em 30 dias.');
-      }
-    }
-
-    return feedback;
+  const updateAttendance = (dayIndex: number, present: boolean) => {
+    setFormData(prev => {
+      const newAttendance = [...(prev.attendance || [])];
+      newAttendance[dayIndex] = present;
+      return { ...prev, attendance: newAttendance };
+    });
   };
 
-  const calculateResults = () => {
+  const updateDaysCount = (days: number) => {
+    setFormData(prev => {
+      const newAttendance = Array(days).fill(true);
+      // Preservar dados existentes se possível
+      if (prev.attendance) {
+        for (let i = 0; i < Math.min(days, prev.attendance.length); i++) {
+          newAttendance[i] = prev.attendance[i];
+        }
+      }
+      return { ...prev, daysCount: days, attendance: newAttendance };
+    });
+  };
+
+  const calculateFinalScore = (criteria: EvaluationData['criteria']): number => {
+    const weights = {
+      seguranca: 2,
+      tecnica: 2,
+      comunicacao: 1,
+      aptidaoFisica: 1,
+      lideranca: 1,
+      operacional: 1
+    };
+
     let totalWeightedScore = 0;
     let totalWeight = 0;
 
-    criteriaConfig.forEach(config => {
-      const score = criteria[config.key].average;
-      totalWeightedScore += score * config.weight;
-      totalWeight += config.weight;
+    Object.entries(criteria).forEach(([key, data]) => {
+      const weight = weights[key as keyof typeof weights];
+      totalWeightedScore += data.average * weight;
+      totalWeight += weight;
     });
 
-    const finalScore = totalWeightedScore / totalWeight;
+    return totalWeightedScore / totalWeight;
+  };
+
+  const getClassification = (finalScore: number, attendanceRate: number): 'approved' | 'reevaluation' | 'rejected' => {
+    if (attendanceRate < 75) return 'rejected';
+    if (finalScore >= 7.0) return 'approved';
+    if (finalScore >= 5.0) return 'reevaluation';
+    return 'rejected';
+  };
+
+  const generateFeedback = (criteria: EvaluationData['criteria'], classification: string, attendanceRate: number): string[] => {
+    const feedback: string[] = [];
     
-    let classification: 'approved' | 'reevaluation' | 'rejected';
-    
-    // Verificar presença primeiro - reprovação automática se < 70%
-    if (attendanceRate < 70) {
-      classification = 'rejected';
-    } else if (finalScore > 8) {
-      classification = 'approved';
-    } else if (finalScore >= 7) {
-      classification = 'reevaluation';
-    } else {
-      classification = 'rejected';
+    if (classification === 'approved') {
+      // Feedback específico para aprovação baseado nos critérios
+      const excellentCriteria = Object.entries(criteria).filter(([_, data]) => data.average >= 8.5);
+      const goodCriteria = Object.entries(criteria).filter(([_, data]) => data.average >= 7.0 && data.average < 8.5);
+      
+      if (excellentCriteria.length > 0) {
+        const criteriaNames = excellentCriteria.map(([key, _]) => criteriaLabels[key as keyof typeof criteriaLabels]).join(', ');
+        feedback.push(`Excelente desempenho em: ${criteriaNames}. Demonstrou domínio excepcional nessas competências.`);
+      }
+      
+      if (goodCriteria.length > 0) {
+        const criteriaNames = goodCriteria.map(([key, _]) => criteriaLabels[key as keyof typeof criteriaLabels]).join(', ');
+        feedback.push(`Bom desempenho em: ${criteriaNames}. Atendeu plenamente aos requisitos estabelecidos.`);
+      }
+      
+      if (attendanceRate === 100) {
+        feedback.push('Presença exemplar durante todo o treinamento, demonstrando comprometimento e dedicação.');
+      } else if (attendanceRate >= 90) {
+        feedback.push('Ótima frequência no treinamento, mostrando responsabilidade e interesse no aprendizado.');
+      }
+      
+      // Feedback específico por critérios de destaque
+      if (criteria.seguranca.average >= 8.0) {
+        feedback.push('Demonstrou consciência exemplar sobre segurança, seguindo rigorosamente os protocolos de prevenção.');
+      }
+      
+      if (criteria.tecnica.average >= 8.0) {
+        feedback.push('Apresentou domínio técnico sólido, executando procedimentos com precisão e eficiência.');
+      }
+      
+      if (criteria.lideranca.average >= 8.0) {
+        feedback.push('Mostrou capacidade natural de liderança, motivando a equipe e tomando decisões assertivas.');
+      }
+      
+      feedback.push('Candidato aprovado e apto para exercer a função de Condutor de Turismo de Aventura com competência e segurança.');
+      
+    } else if (classification === 'reevaluation') {
+      const weakCriteria = Object.entries(criteria).filter(([_, data]) => data.average < 7.0);
+      
+      if (weakCriteria.length > 0) {
+        const criteriaNames = weakCriteria.map(([key, _]) => criteriaLabels[key as keyof typeof criteriaLabels]).join(', ');
+        feedback.push(`Necessário aprimoramento em: ${criteriaNames}`);
+      }
+
+      // Feedback específico por critério
+      Object.entries(criteria).forEach(([key, data]) => {
+        if (data.average < 7.0) {
+          switch (key) {
+            case 'seguranca':
+              if (data.average < 6.0) {
+                feedback.push('Segurança: Revisar protocolos de segurança e práticas de prevenção de acidentes. Fundamental para a atividade.');
+              } else {
+                feedback.push('Segurança: Reforçar conhecimentos sobre procedimentos de segurança e uso de EPIs.');
+              }
+              break;
+            case 'tecnica':
+              feedback.push('Técnica: Praticar mais as técnicas específicas da atividade e buscar aperfeiçoamento teórico.');
+              break;
+            case 'comunicacao':
+              feedback.push('Comunicação: Trabalhar clareza nas instruções e assertividade na condução do grupo.');
+              break;
+            case 'aptidaoFisica':
+              feedback.push('Aptidão Física: Melhorar condicionamento físico para atender às demandas da atividade.');
+              break;
+            case 'lideranca':
+              feedback.push('Liderança: Desenvolver habilidades de liderança e gestão de grupos em situações desafiadoras.');
+              break;
+            case 'operacional':
+              feedback.push('Operacional: Aprimorar organização e execução dos procedimentos operacionais.');
+              break;
+          }
+        }
+      });
+
+      if (attendanceRate < 90) {
+        feedback.push('Presença: Manter frequência mais regular nos treinamentos para melhor aproveitamento.');
+      }
+      
+    } else if (classification === 'rejected') {
+      const criticalCriteria = Object.entries(criteria).filter(([_, data]) => data.average < 5.0);
+      
+      if (attendanceRate < 75) {
+        feedback.push('Frequência insuficiente: Presença abaixo do mínimo exigido (75%). Necessário refazer o treinamento.');
+      }
+
+      if (criticalCriteria.length > 0) {
+        const criteriaNames = criticalCriteria.map(([key, _]) => criteriaLabels[key as keyof typeof criteriaLabels]).join(', ');
+        feedback.push(`Desempenho crítico em: ${criteriaNames}. Necessário desenvolvimento significativo nessas áreas.`);
+      }
+
+      // Feedback detalhado para cada critério com nota baixa
+      Object.entries(criteria).forEach(([key, data]) => {
+        if (data.average < 5.0) {
+          switch (key) {
+            case 'seguranca':
+              feedback.push('Segurança: Conhecimento insuficiente sobre protocolos de segurança. CRÍTICO para a função.');
+              break;
+            case 'tecnica':
+              feedback.push('Técnica: Domínio técnico inadequado. Necessário treinamento intensivo antes de nova avaliação.');
+              break;
+            case 'comunicacao':
+              feedback.push('Comunicação: Dificuldades significativas na comunicação com o grupo. Essencial para a condução segura.');
+              break;
+            case 'aptidaoFisica':
+              feedback.push('Aptidão Física: Condicionamento físico insuficiente para as demandas da atividade.');
+              break;
+            case 'lideranca':
+              feedback.push('Liderança: Falta de habilidades de liderança necessárias para conduzir grupos com segurança.');
+              break;
+            case 'operacional':
+              feedback.push('Operacional: Execução inadequada dos procedimentos operacionais básicos.');
+              break;
+          }
+        }
+      });
     }
-
-    const feedback = generateDetailedFeedback(classification, criteria, attendanceRate);
-
-    return { finalScore, classification, feedback };
+    
+    return feedback;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { finalScore, classification, feedback } = calculateResults();
+    if (!formData.criteria) return;
+
+    const finalScore = calculateFinalScore(formData.criteria);
+    const attendanceRate = formData.attendance ? 
+      (formData.attendance.filter(Boolean).length / formData.attendance.length) * 100 : 0;
     
-    // Converter string da data para Date object
-    const trainingDateObj = formData.trainingDate ? new Date(formData.trainingDate) : new Date();
-    
+    const classification = getClassification(finalScore, attendanceRate);
+    const feedback = generateFeedback(formData.criteria, classification, attendanceRate);
+
     const evaluationData: EvaluationData = {
-      trainingTitle: formData.trainingTitle,
-      candidateName: formData.candidateName,
-      age: parseInt(formData.age),
-      trainingDate: trainingDateObj,
-      daysCount: parseInt(formData.daysCount),
-      attendance,
-      hoursCount,
-      candidatePhoto: formData.candidatePhoto || undefined,
-      candidatePhotoUrl: photoPreview || undefined,
-      criteria: criteria as EvaluationData['criteria'],
+      ...formData as EvaluationData,
       finalScore,
       classification,
-      feedback
+      feedback,
+      candidatePhoto,
+      candidatePhotoUrl: photoPreview
     };
 
     onSubmit(evaluationData);
   };
 
+  const isFormValid = () => {
+    return formData.trainingTitle && 
+           formData.candidateName && 
+           formData.age && 
+           formData.criteria &&
+           Object.values(formData.criteria).every(criteria => 
+             Object.values(criteria).every(value => typeof value === 'number' && value >= 0)
+           );
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Dados Básicos */}
-      <Card className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2" style={{borderColor: '#103722'}}>
-        <h2 className="text-xl font-semibold mb-4" style={{color: '#103722'}}>Dados Básicos</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="trainingTitle">Título do Treinamento</Label>
-            <Input
-              id="trainingTitle"
-              value={formData.trainingTitle}
-              onChange={(e) => handleInputChange('trainingTitle', e.target.value)}
-              required
-              className="mt-1"
-            />
-          </div>
-          
-          <div>
+      {/* Informações Básicas */}
+      <div className="space-y-6">
+        <div className="flex items-center space-x-2 mb-4">
+          <User className="h-5 w-5 text-green-600" />
+          <h2 className="text-xl font-semibold text-gray-800">Informações do Candidato</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
             <Label htmlFor="candidateName">Nome do Candidato</Label>
             <Input
               id="candidateName"
-              value={formData.candidateName}
-              onChange={(e) => handleInputChange('candidateName', e.target.value)}
+              value={formData.candidateName || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, candidateName: e.target.value }))}
+              placeholder="Nome completo"
               required
-              className="mt-1"
             />
           </div>
-          
-          <div>
+
+          <div className="space-y-2">
             <Label htmlFor="age">Idade</Label>
             <Input
               id="age"
               type="number"
-              value={formData.age}
-              onChange={(e) => handleInputChange('age', e.target.value)}
+              value={formData.age || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, age: parseInt(e.target.value) || 0 }))}
+              placeholder="Idade"
+              min="18"
+              max="70"
               required
-              className="mt-1"
             />
           </div>
-          
-          <div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="candidatePhoto">Foto do Candidato (Opcional)</Label>
+          <div className="flex items-center space-x-4">
+            <Input
+              id="candidatePhoto"
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              className="flex-1"
+            />
+            {photoPreview && (
+              <img 
+                src={photoPreview} 
+                alt="Preview" 
+                className="h-16 w-16 object-cover rounded-full border-2 border-gray-300"
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Informações do Treinamento */}
+      <div className="space-y-6">
+        <div className="flex items-center space-x-2 mb-4">
+          <MapPin className="h-5 w-5 text-green-600" />
+          <h2 className="text-xl font-semibold text-gray-800">Informações do Treinamento</h2>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="trainingTitle">Título do Treinamento</Label>
+          <Input
+            id="trainingTitle"
+            value={formData.trainingTitle || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, trainingTitle: e.target.value }))}
+            placeholder="Ex: Condutor de Turismo de Aventura - Rapel"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-2">
             <Label htmlFor="trainingDate">Data do Treinamento</Label>
             <Input
               id="trainingDate"
               type="date"
-              value={formData.trainingDate}
-              onChange={(e) => handleInputChange('trainingDate', e.target.value)}
+              value={formData.trainingDate ? format(formData.trainingDate, 'yyyy-MM-dd') : ''}
+              onChange={(e) => setFormData(prev => ({ 
+                ...prev, 
+                trainingDate: new Date(e.target.value) 
+              }))}
               required
-              className="mt-1"
             />
           </div>
-          
-          <div>
+
+          <div className="space-y-2">
             <Label htmlFor="daysCount">Quantidade de Dias</Label>
             <Input
               id="daysCount"
               type="number"
-              value={formData.daysCount}
-              onChange={(e) => handleInputChange('daysCount', e.target.value)}
+              value={formData.daysCount || 1}
+              onChange={(e) => updateDaysCount(parseInt(e.target.value) || 1)}
+              min="1"
+              max="30"
               required
-              className="mt-1"
             />
           </div>
-          
-          <div>
-            <Label htmlFor="hoursCount">Quantidade de Horas (Automático)</Label>
+
+          <div className="space-y-2">
+            <Label htmlFor="hoursCount">Carga Horária Total</Label>
             <Input
               id="hoursCount"
               type="number"
-              value={hoursCount}
-              readOnly
-              className="mt-1 bg-gray-100"
-              title="Calculado automaticamente: 8 horas por dia"
+              value={formData.hoursCount || 8}
+              onChange={(e) => setFormData(prev => ({ 
+                ...prev, 
+                hoursCount: parseInt(e.target.value) || 8 
+              }))}
+              min="1"
+              max="300"
+              required
             />
-            <p className="text-xs text-gray-600 mt-1">8 horas por dia de treinamento</p>
           </div>
         </div>
 
-        {/* Presença */}
-        {parseInt(formData.daysCount) > 0 && (
-          <div className="mt-6">
-            <Label>Presença por Dia</Label>
-            <div className="grid grid-cols-7 gap-2 mt-2">
-              {attendance.map((present, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`day-${index}`}
-                    checked={present}
-                    onCheckedChange={(checked) => handleAttendanceChange(index, checked as boolean)}
-                  />
-                  <Label htmlFor={`day-${index}`} className="text-sm">
-                    Dia {index + 1}
+        {/* Controle de Presença */}
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Calendar className="h-5 w-5 text-green-600" />
+            <Label>Controle de Presença</Label>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+            {Array.from({ length: formData.daysCount || 1 }, (_, index) => (
+              <div key={index} className="flex items-center space-x-2 p-2 border rounded">
+                <input
+                  type="checkbox"
+                  id={`day-${index}`}
+                  checked={formData.attendance?.[index] || false}
+                  onChange={(e) => updateAttendance(index, e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor={`day-${index}`} className="text-sm">
+                  Dia {index + 1}
+                </Label>
+              </div>
+            ))}
+          </div>
+          
+          <div className="text-sm text-gray-600">
+            Presença: {formData.attendance ? 
+              `${formData.attendance.filter(Boolean).length}/${formData.attendance.length} dias 
+              (${((formData.attendance.filter(Boolean).length / formData.attendance.length) * 100).toFixed(0)}%)` 
+              : '0/0 dias (0%)'
+            }
+          </div>
+        </div>
+      </div>
+
+      {/* Critérios de Avaliação */}
+      <div className="space-y-6">
+        <div className="flex items-center space-x-2 mb-4">
+          <Users className="h-5 w-5 text-green-600" />
+          <h2 className="text-xl font-semibold text-gray-800">Critérios de Avaliação</h2>
+        </div>
+
+        {criteriaConfig.map((criteria) => (
+          <Card key={criteria.key} className="p-6 border-l-4 border-l-green-500">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                {criteria.label}
+              </h3>
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                Média: {formData.criteria?.[criteria.key]?.average.toFixed(1) || '0.0'}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {criteria.subCriteria.map((sub) => (
+                <div key={sub.key} className="space-y-2">
+                  <Label htmlFor={`${criteria.key}-${sub.key}`} className="text-sm font-medium">
+                    {sub.label}
                   </Label>
+                  <p className="text-xs text-gray-600 mb-2">{sub.description}</p>
+                  <Input
+                    id={`${criteria.key}-${sub.key}`}
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value={formData.criteria?.[criteria.key]?.[sub.key as keyof any] || ''}
+                    onChange={(e) => updateCriteriaScore(
+                      criteria.key, 
+                      sub.key, 
+                      parseFloat(e.target.value) || 0
+                    )}
+                    placeholder="0.0"
+                    className="text-center"
+                  />
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          </Card>
+        ))}
+      </div>
 
-        {/* Upload de Foto */}
-        <div className="mt-6">
-          <Label>Foto do Candidato</Label>
-          <div className="mt-2 flex items-center space-x-4">
-            {photoPreview ? (
-              <img 
-                src={photoPreview} 
-                alt="Preview" 
-                className="h-20 w-20 object-cover rounded-full border-2"
-                style={{borderColor: '#103722'}}
-              />
-            ) : (
-              <div className="h-20 w-20 bg-gray-100 rounded-full flex items-center justify-center border-2 border-dashed border-gray-300">
-                <User className="h-8 w-8 text-gray-400" />
-              </div>
-            )}
-            
-            <div className="flex space-x-2">
-              {isMobile && (
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleCameraCapture}
-                  className="hover:bg-opacity-10"
-                  style={{borderColor: '#103722', color: '#103722'}}
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Câmera
-                </Button>
-              )}
-              
-              <label htmlFor="photo-upload">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  size="sm" 
-                  className="cursor-pointer hover:bg-opacity-10"
-                  style={{borderColor: '#103722', color: '#103722'}}
-                  asChild
-                >
-                  <span>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </span>
-                </Button>
-              </label>
-            </div>
-            
-            <input
-              id="photo-upload"
-              type="file"
-              accept="image/*"
-              capture={isMobile ? "user" : undefined}
-              onChange={handlePhotoUpload}
-              className="hidden"
-            />
-          </div>
-        </div>
-      </Card>
-
-      {/* Critérios de Avaliação */}
-      <Card className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2" style={{borderColor: '#103722'}}>
-        <h2 className="text-xl font-semibold mb-6" style={{color: '#103722'}}>Critérios de Avaliação</h2>
-        
-        <div className="space-y-8">
-          {criteriaConfig.map((config) => (
-            <div key={config.key} className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-semibold" style={{color: '#103722'}}>
-                    {config.label} {config.weight > 1 && <span className="text-sm" style={{color: '#006633'}}>(Peso {config.weight})</span>}
-                  </h3>
-                  <p className="text-lg font-bold mt-1" style={{color: '#006633'}}>
-                    Média: {criteria[config.key].average.toFixed(1)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Subtópicos */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-4">
-                {config.subCriteria.map((subCriteria) => (
-                  <div key={subCriteria.key} className="space-y-2 p-4 bg-white rounded-lg border" style={{borderColor: '#103722'}}>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <Label className="font-medium" style={{color: '#103722'}}>
-                          {subCriteria.label}
-                        </Label>
-                        <p className="text-xs text-gray-600">{subCriteria.description}</p>
-                      </div>
-                      <div className="text-xl font-bold min-w-[2rem] text-center" style={{color: '#006633'}}>
-                        {criteria[config.key][subCriteria.key]}
-                      </div>
-                    </div>
-                    
-                    <Slider
-                      value={[criteria[config.key][subCriteria.key]]}
-                      onValueChange={(value) => updateCriteriaAverage(config.key, subCriteria.key, value[0])}
-                      max={10}
-                      min={0}
-                      step={0.5}
-                      className="w-full"
-                    />
-                    
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>0</span>
-                      <span>5</span>
-                      <span>10</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      <Button 
-        type="submit" 
-        className="w-full py-3 text-lg text-white hover:opacity-90"
-        style={{backgroundColor: '#006633'}}
-      >
-        Gerar Relatório de Avaliação
-      </Button>
+      {/* Botão de Submissão */}
+      <div className="flex justify-center pt-6">
+        <Button 
+          type="submit" 
+          size="lg"
+          disabled={!isFormValid()}
+          className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg"
+        >
+          <Clock className="h-5 w-5 mr-2" />
+          Gerar Relatório de Avaliação
+        </Button>
+      </div>
     </form>
   );
 };
