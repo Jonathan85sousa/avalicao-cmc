@@ -196,9 +196,9 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
   };
 
   const getClassification = (finalScore: number, attendanceRate: number): 'approved' | 'reevaluation' | 'rejected' => {
-    if (attendanceRate < 75) return 'rejected';
-    if (finalScore >= 7.0) return 'approved';
-    if (finalScore >= 5.0) return 'reevaluation';
+    if (attendanceRate < 70) return 'rejected';
+    if (finalScore >= 8.0) return 'approved';
+    if (finalScore >= 7.0) return 'reevaluation';
     return 'rejected';
   };
 
