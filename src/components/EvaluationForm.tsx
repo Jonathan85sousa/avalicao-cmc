@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Upload, User, Clock, MapPin, Users } from 'lucide-react';
+import { Calendar, Upload, User, Clock, MapPin, Users, Camera } from 'lucide-react';
 import { EvaluationData, CriteriaConfig } from '@/types/evaluation';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -39,6 +39,10 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
 
   const [candidatePhoto, setCandidatePhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string>('');
+  const [isCapturing, setIsCapturing] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -131,6 +135,56 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const startCamera = async () => {
+    try {
+      setIsCapturing(true);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user' },
+        audio: false
+      });
+      
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Erro ao acessar a câmera:', error);
+      alert('Não foi possível acessar a câmera. Verifique as permissões.');
+      setIsCapturing(false);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const context = canvas.getContext('2d');
+      
+      if (context) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], 'candidate-photo.jpg', { type: 'image/jpeg' });
+            setCandidatePhoto(file);
+            setPhotoPreview(canvas.toDataURL());
+            stopCamera();
+          }
+        }, 'image/jpeg', 0.8);
+      }
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setIsCapturing(false);
   };
 
   const updateCriteriaScore = (criteriaKey: string, subKey: string, value: number) => {
@@ -429,6 +483,15 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
               onChange={handlePhotoUpload}
               className="flex-1"
             />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={startCamera}
+              className="flex items-center space-x-2"
+            >
+              <Camera className="h-4 w-4" />
+              <span>Câmera</span>
+            </Button>
             {photoPreview && (
               <img 
                 src={photoPreview} 
@@ -438,6 +501,44 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
             )}
           </div>
         </div>
+
+        {/* Modal da Câmera */}
+        {isCapturing && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Capturar Foto</h3>
+              <div className="relative">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  className="w-full rounded-lg"
+                  style={{ maxHeight: '300px' }}
+                />
+                <canvas
+                  ref={canvasRef}
+                  className="hidden"
+                />
+              </div>
+              <div className="flex justify-center space-x-4 mt-4">
+                <Button
+                  type="button"
+                  onClick={capturePhoto}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Capturar
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={stopCamera}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Informações do Treinamento */}
