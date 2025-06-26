@@ -242,84 +242,108 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
       feedback.push('Candidato aprovado e apto para exercer a função de Condutor de Turismo de Aventura com competência e segurança.');
       
     } else if (classification === 'reevaluation') {
-      const weakCriteria = Object.entries(criteria).filter(([_, data]) => data.average < 7.0);
+      // Feedback para reavaliação (nota final entre 7.0 e 7.9)
+      feedback.push('Desempenho satisfatório, mas com necessidade de aprimoramento para atingir o padrão de excelência exigido.');
+      
+      const weakCriteria = Object.entries(criteria).filter(([_, data]) => data.average < 7.5);
+      const moderateCriteria = Object.entries(criteria).filter(([_, data]) => data.average >= 7.5 && data.average < 8.0);
       
       if (weakCriteria.length > 0) {
         const criteriaNames = weakCriteria.map(([key, _]) => criteriaLabels[key as keyof typeof criteriaLabels]).join(', ');
-        feedback.push(`Necessário aprimoramento em: ${criteriaNames}`);
+        feedback.push(`Pontos que precisam de maior atenção: ${criteriaNames}. Requer desenvolvimento mais intensivo.`);
       }
 
-      // Feedback específico por critério
+      if (moderateCriteria.length > 0) {
+        const criteriaNames = moderateCriteria.map(([key, _]) => criteriaLabels[key as keyof typeof criteriaLabels]).join(', ');
+        feedback.push(`Competências em desenvolvimento: ${criteriaNames}. Próximo do padrão esperado, necessário refinamento.`);
+      }
+
+      // Feedback específico por critério para reavaliação
       Object.entries(criteria).forEach(([key, data]) => {
-        if (data.average < 7.0) {
+        if (data.average < 8.0) {
           switch (key) {
             case 'seguranca':
-              if (data.average < 6.0) {
-                feedback.push('Segurança: Revisar protocolos de segurança e práticas de prevenção de acidentes. Fundamental para a atividade.');
+              if (data.average < 7.5) {
+                feedback.push('Segurança: Reforçar conhecimentos sobre protocolos de segurança e práticas preventivas. Fundamental para aprovação.');
               } else {
-                feedback.push('Segurança: Reforçar conhecimentos sobre procedimentos de segurança e uso de EPIs.');
+                feedback.push('Segurança: Aprimorar consistência na aplicação dos procedimentos de segurança.');
               }
               break;
             case 'tecnica':
-              feedback.push('Técnica: Praticar mais as técnicas específicas da atividade e buscar aperfeiçoamento teórico.');
+              feedback.push('Técnica: Praticar mais as habilidades específicas e buscar maior precisão na execução.');
               break;
             case 'comunicacao':
-              feedback.push('Comunicação: Trabalhar clareza nas instruções e assertividade na condução do grupo.');
+              feedback.push('Comunicação: Desenvolver maior clareza e assertividade na condução do grupo.');
               break;
             case 'aptidaoFisica':
-              feedback.push('Aptidão Física: Melhorar condicionamento físico para atender às demandas da atividade.');
+              feedback.push('Aptidão Física: Melhorar condicionamento para atender plenamente às demandas da atividade.');
               break;
             case 'lideranca':
-              feedback.push('Liderança: Desenvolver habilidades de liderança e gestão de grupos em situações desafiadoras.');
+              feedback.push('Liderança: Fortalecer habilidades de liderança e gestão de grupos em situações desafiadoras.');
               break;
             case 'operacional':
-              feedback.push('Operacional: Aprimorar organização e execução dos procedimentos operacionais.');
+              feedback.push('Operacional: Aperfeiçoar organização e eficiência na execução dos procedimentos.');
               break;
           }
         }
       });
 
       if (attendanceRate < 90) {
-        feedback.push('Presença: Manter frequência mais regular nos treinamentos para melhor aproveitamento.');
+        feedback.push('Presença: Manter frequência mais regular nos treinamentos para melhor aproveitamento do conteúdo.');
       }
       
     } else if (classification === 'rejected') {
-      const criticalCriteria = Object.entries(criteria).filter(([_, data]) => data.average < 5.0);
-      
-      if (attendanceRate < 75) {
-        feedback.push('Frequência insuficiente: Presença abaixo do mínimo exigido (75%). Necessário refazer o treinamento.');
+      // Feedback para reprovação (nota final menor que 7.0 ou presença menor que 70%)
+      if (attendanceRate < 70) {
+        feedback.push('Frequência insuficiente: Presença abaixo do mínimo exigido (70%). É obrigatório refazer o treinamento completo.');
       }
 
+      feedback.push('Desempenho abaixo do padrão mínimo exigido. Necessário desenvolvimento significativo das competências avaliadas.');
+      
+      const criticalCriteria = Object.entries(criteria).filter(([_, data]) => data.average < 6.0);
+      const lowCriteria = Object.entries(criteria).filter(([_, data]) => data.average >= 6.0 && data.average < 7.0);
+      
       if (criticalCriteria.length > 0) {
         const criteriaNames = criticalCriteria.map(([key, _]) => criteriaLabels[key as keyof typeof criteriaLabels]).join(', ');
-        feedback.push(`Desempenho crítico em: ${criteriaNames}. Necessário desenvolvimento significativo nessas áreas.`);
+        feedback.push(`Competências críticas: ${criteriaNames}. Necessário treinamento intensivo e acompanhamento especializado.`);
+      }
+
+      if (lowCriteria.length > 0) {
+        const criteriaNames = lowCriteria.map(([key, _]) => criteriaLabels[key as keyof typeof criteriaLabels]).join(', ');
+        feedback.push(`Competências insuficientes: ${criteriaNames}. Requer desenvolvimento substancial antes de nova avaliação.`);
       }
 
       // Feedback detalhado para cada critério com nota baixa
       Object.entries(criteria).forEach(([key, data]) => {
-        if (data.average < 5.0) {
+        if (data.average < 7.0) {
           switch (key) {
             case 'seguranca':
-              feedback.push('Segurança: Conhecimento insuficiente sobre protocolos de segurança. CRÍTICO para a função.');
+              if (data.average < 5.0) {
+                feedback.push('Segurança: Conhecimento inadequado sobre protocolos de segurança. CRÍTICO - risco para a atividade.');
+              } else {
+                feedback.push('Segurança: Domínio insuficiente das práticas de segurança. Necessário treinamento específico.');
+              }
               break;
             case 'tecnica':
-              feedback.push('Técnica: Domínio técnico inadequado. Necessário treinamento intensivo antes de nova avaliação.');
+              feedback.push('Técnica: Habilidades técnicas abaixo do esperado. Necessário treinamento prático intensivo.');
               break;
             case 'comunicacao':
-              feedback.push('Comunicação: Dificuldades significativas na comunicação com o grupo. Essencial para a condução segura.');
+              feedback.push('Comunicação: Dificuldades na comunicação com grupos. Essencial para condução segura de atividades.');
               break;
             case 'aptidaoFisica':
-              feedback.push('Aptidão Física: Condicionamento físico insuficiente para as demandas da atividade.');
+              feedback.push('Aptidão Física: Condicionamento físico inadequado para as demandas da função.');
               break;
             case 'lideranca':
-              feedback.push('Liderança: Falta de habilidades de liderança necessárias para conduzir grupos com segurança.');
+              feedback.push('Liderança: Habilidades de liderança insuficientes para gestão segura de grupos.');
               break;
             case 'operacional':
-              feedback.push('Operacional: Execução inadequada dos procedimentos operacionais básicos.');
+              feedback.push('Operacional: Execução inadequada dos procedimentos operacionais fundamentais.');
               break;
           }
         }
       });
+
+      feedback.push('Recomenda-se buscar treinamento adicional e prática supervisionada antes de nova tentativa de certificação.');
     }
     
     return feedback;
