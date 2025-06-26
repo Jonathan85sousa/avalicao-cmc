@@ -116,6 +116,9 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
   // Calcular horas automaticamente (8h por dia)
   const hoursCount = parseInt(formData.daysCount) * 8 || 0;
 
+  // Calcular taxa de presença
+  const attendanceRate = attendance.length > 0 ? (attendance.filter(Boolean).length / attendance.length) * 100 : 100;
+
   // Calcular média quando subtópicos mudarem
   const updateCriteriaAverage = (criteriaKey: string, subKey: string, value: number) => {
     setCriteria(prev => {
@@ -201,7 +204,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
     });
   };
 
-  const generateDetailedFeedback = (classification: string, criteriaScores: any) => {
+  const generateDetailedFeedback = (classification: string, criteriaScores: any, attendanceRate: number) => {
     const feedback: string[] = [];
     
     const improvementSuggestions = {
@@ -237,35 +240,75 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
       }
     };
 
-    if (classification === 'rejected') {
-      feedback.push('🔴 REPROVADO - Ações necessárias para aprovação:');
-    } else if (classification === 'reevaluation') {
-      feedback.push('🟡 REAVALIAÇÃO - Pontos que precisam ser aprimorados:');
+    // Feedback específico para reprovação por presença
+    if (attendanceRate < 70) {
+      feedback.push('REPROVADO - Presença insuficiente para aprovação:');
+      feedback.push(`\nPresença: ${attendanceRate.toFixed(1)}% (mínimo exigido: 70%)`);
+      feedback.push('\nPara aprovação é necessário:');
+      feedback.push('• Participar integralmente de um novo treinamento');
+      feedback.push('• Manter presença mínima de 70% em todas as atividades');
+      feedback.push('• Demonstrar comprometimento com o cronograma estabelecido');
+      return feedback;
     }
 
-    criteriaConfig.forEach(config => {
-      const criteriaScore = criteria[config.key];
-      if (criteriaScore.average < 8) {
-        const lowSubCriteria = config.subCriteria.filter(sub => 
-          criteria[config.key][sub.key] < 8
-        );
-        
-        if (lowSubCriteria.length > 0) {
-          feedback.push(`\n📋 ${config.label} (Nota: ${criteriaScore.average.toFixed(1)}):`);
+    if (classification === 'approved') {
+      feedback.push('APROVADO - Parabéns pelo excelente desempenho!');
+      feedback.push('\nPontos fortes identificados:');
+      
+      criteriaConfig.forEach(config => {
+        const criteriaScore = criteria[config.key];
+        if (criteriaScore.average >= 8) {
+          const strongSubCriteria = config.subCriteria.filter(sub => 
+            criteria[config.key][sub.key] >= 8
+          );
           
-          lowSubCriteria.forEach(sub => {
-            const score = criteria[config.key][sub.key];
-            const suggestion = improvementSuggestions[config.key as keyof typeof improvementSuggestions]?.[sub.key as keyof any];
-            feedback.push(`   • ${sub.label} (${score}): ${suggestion}`);
-          });
+          if (strongSubCriteria.length > 0) {
+            feedback.push(`\n${config.label} (Nota: ${criteriaScore.average.toFixed(1)}):`);
+            strongSubCriteria.forEach(sub => {
+              const score = criteria[config.key][sub.key];
+              feedback.push(`   • ${sub.label} (${score}) - Excelente desempenho`);
+            });
+          }
         }
-      }
-    });
+      });
 
-    if (classification === 'rejected') {
-      feedback.push('\n💡 Recomendação: Participe de um treinamento adicional focado nos pontos de melhoria identificados antes de uma nova avaliação.');
+      feedback.push('\nRecomendações para manutenção da excelência:');
+      feedback.push('• Continue praticando as técnicas aprendidas regularmente');
+      feedback.push('• Mantenha-se atualizado com novos procedimentos e regulamentações');
+      feedback.push('• Compartilhe seu conhecimento com outros profissionais');
+      feedback.push('• Participe de treinamentos de atualização periodicamente');
+      
+    } else if (classification === 'rejected') {
+      feedback.push('REPROVADO - Ações necessárias para aprovação:');
     } else if (classification === 'reevaluation') {
-      feedback.push('\n💡 Recomendação: Dedique tempo extra aos pontos mencionados e solicite uma reavaliação em 30 dias.');
+      feedback.push('REAVALIAÇÃO - Pontos que precisam ser aprimorados:');
+    }
+
+    if (classification !== 'approved') {
+      criteriaConfig.forEach(config => {
+        const criteriaScore = criteria[config.key];
+        if (criteriaScore.average < 8) {
+          const lowSubCriteria = config.subCriteria.filter(sub => 
+            criteria[config.key][sub.key] < 8
+          );
+          
+          if (lowSubCriteria.length > 0) {
+            feedback.push(`\n${config.label} (Nota: ${criteriaScore.average.toFixed(1)}):`);
+            
+            lowSubCriteria.forEach(sub => {
+              const score = criteria[config.key][sub.key];
+              const suggestion = improvementSuggestions[config.key as keyof typeof improvementSuggestions]?.[sub.key as keyof any];
+              feedback.push(`   • ${sub.label} (${score}): ${suggestion}`);
+            });
+          }
+        }
+      });
+
+      if (classification === 'rejected') {
+        feedback.push('\nRecomendação: Participe de um treinamento adicional focado nos pontos de melhoria identificados antes de uma nova avaliação.');
+      } else if (classification === 'reevaluation') {
+        feedback.push('\nRecomendação: Dedique tempo extra aos pontos mencionados e solicite uma reavaliação em 30 dias.');
+      }
     }
 
     return feedback;
@@ -284,7 +327,11 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
     const finalScore = totalWeightedScore / totalWeight;
     
     let classification: 'approved' | 'reevaluation' | 'rejected';
-    if (finalScore > 8) {
+    
+    // Verificar presença primeiro - reprovação automática se < 70%
+    if (attendanceRate < 70) {
+      classification = 'rejected';
+    } else if (finalScore > 8) {
       classification = 'approved';
     } else if (finalScore >= 7) {
       classification = 'reevaluation';
@@ -292,7 +339,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
       classification = 'rejected';
     }
 
-    const feedback = generateDetailedFeedback(classification, criteria);
+    const feedback = generateDetailedFeedback(classification, criteria, attendanceRate);
 
     return { finalScore, classification, feedback };
   };
