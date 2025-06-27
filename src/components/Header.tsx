@@ -29,7 +29,7 @@ const Header = () => {
             ) : (
               <div className="flex items-center space-x-2" style={{color: '#103722'}}>
                 <Mountain className="h-8 w-8" />
-                <span className="text-xl font-bold">Aventura Pro</span>
+                <span className="text-xl font-bold">MSV-Avalição-CMC-Beta </span>
               </div>
             )}
           </div>
