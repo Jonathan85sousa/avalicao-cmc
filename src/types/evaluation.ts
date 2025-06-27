@@ -7,6 +7,7 @@ export interface EvaluationData {
   // Dados básicos
   trainingTitle: string;
   candidateName: string;
+  clientName: string;
   age: number;
   trainingDate: Date;
   daysCount: number;

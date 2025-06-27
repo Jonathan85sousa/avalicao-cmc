@@ -19,6 +19,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
   const [formData, setFormData] = useState<Partial<EvaluationData>>({
     trainingTitle: '',
     candidateName: '',
+    clientName: '',
     age: 0,
     trainingDate: new Date(),
     daysCount: 1,
@@ -430,6 +431,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
   const isFormValid = () => {
     return formData.trainingTitle && 
            formData.candidateName && 
+           formData.clientName &&
            formData.age && 
            formData.criteria &&
            Object.values(formData.criteria).every(criteria => 
@@ -458,6 +460,19 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="clientName">Nome do Cliente</Label>
+            <Input
+              id="clientName"
+              value={formData.clientName || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, clientName: e.target.value }))}
+              placeholder="Nome da empresa/cliente"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="age">Idade</Label>
             <Input

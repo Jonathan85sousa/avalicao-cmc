@@ -208,6 +208,7 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-green-800">
                 <div>
                   <p><span className="font-semibold">Candidato:</span> {data.candidateName}</p>
+                  <p><span className="font-semibold">Cliente:</span> {data.clientName}</p>
                   <p><span className="font-semibold">Idade:</span> {data.age} anos</p>
                   <p><span className="font-semibold">Treinamento:</span> {data.trainingTitle}</p>
                 </div>
@@ -216,6 +217,90 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
                   <p><span className="font-semibold">Duração:</span> {data.daysCount} dias ({data.hoursCount}h)</p>
                   <p><span className="font-semibold">Presença:</span> {attendanceRate.toFixed(0)}%</p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Metodologia de Avaliação */}
+        <Card className="p-6 bg-blue-50 border-2 border-blue-200">
+          <h3 className="text-xl font-semibold mb-4 text-blue-800">📋 Metodologia de Avaliação</h3>
+          
+          <div className="space-y-4 text-gray-700">
+            <div>
+              <h4 className="font-semibold text-blue-700 mb-2">Sistema de Pontuação:</h4>
+              <p className="mb-3">
+                A avaliação é realizada através de 6 critérios fundamentais, cada um composto por 3 subcritérios específicos. 
+                As notas variam de 0 a 10 pontos, sendo calculada a média aritmética de cada critério.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h5 className="font-semibold text-blue-600 mb-2">Critérios com Peso 2:</h5>
+                  <ul className="text-sm space-y-1">
+                    <li>• <strong>Segurança:</strong> Prevenção, EPI, Procedimentos</li>
+                    <li>• <strong>Técnica:</strong> Conhecimento, Execução, Eficiência</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h5 className="font-semibold text-blue-600 mb-2">Critérios com Peso 1:</h5>
+                  <ul className="text-sm space-y-1">
+                    <li>• <strong>Comunicação:</strong> Clareza, Assertividade, Consistência</li>
+                    <li>• <strong>Aptidão Física:</strong> Resistência, Força, Agilidade</li>
+                    <li>• <strong>Liderança:</strong> Motivação, Gestão de Conflitos, Tomada de Decisão</li>
+                    <li>• <strong>Operacional:</strong> Equipagem, Lançamento, Frenagem</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="font-semibold text-blue-700 mb-3">Critérios de Aprovação:</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                  <div className="flex items-center mb-2">
+                    <XCircle className="h-5 w-5 text-red-600 mr-2" />
+                    <h5 className="font-semibold text-red-700">Reprovado</h5>
+                  </div>
+                  <p className="text-sm text-red-600">
+                    <strong>Nota Final:</strong> Menor que 7,0<br/>
+                    <strong>ou</strong><br/>
+                    <strong>Presença:</strong> Menor que 70%
+                  </p>
+                </div>
+
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <div className="flex items-center mb-2">
+                    <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
+                    <h5 className="font-semibold text-yellow-700">Reavaliação</h5>
+                  </div>
+                  <p className="text-sm text-yellow-600">
+                    <strong>Nota Final:</strong> Entre 7,0 e 7,9<br/>
+                    <strong>e</strong><br/>
+                    <strong>Presença:</strong> Mínimo 70%
+                  </p>
+                </div>
+
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="flex items-center mb-2">
+                    <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                    <h5 className="font-semibold text-green-700">Aprovado</h5>
+                  </div>
+                  <p className="text-sm text-green-600">
+                    <strong>Nota Final:</strong> 8,0 ou superior<br/>
+                    <strong>e</strong><br/>
+                    <strong>Presença:</strong> Mínimo 70%
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-100 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-700">
+                  <strong>Observação:</strong> A nota final é calculada através da média ponderada dos critérios, 
+                  onde Segurança e Técnica possuem peso 2, e os demais critérios possuem peso 1.
+                </p>
               </div>
             </div>
           </div>
