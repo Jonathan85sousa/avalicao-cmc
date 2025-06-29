@@ -224,7 +224,16 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
           newAttendance[i] = prev.attendance[i];
         }
       }
-      return { ...prev, daysCount: days, attendance: newAttendance };
+      
+      // Calcular horas automaticamente (8 horas por dia)
+      const totalHours = days * 8;
+      
+      return { 
+        ...prev, 
+        daysCount: days, 
+        attendance: newAttendance,
+        hoursCount: totalHours
+      };
     });
   };
 
@@ -261,7 +270,6 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
     const feedback: string[] = [];
     
     if (classification === 'approved') {
-      // Feedback específico para aprovação baseado nos critérios
       const excellentCriteria = Object.entries(criteria).filter(([_, data]) => data.average >= 8.5);
       const goodCriteria = Object.entries(criteria).filter(([_, data]) => data.average >= 7.0 && data.average < 8.5);
       
@@ -281,7 +289,6 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
         feedback.push('Ótima frequência no treinamento, mostrando responsabilidade e interesse no aprendizado.');
       }
       
-      // Feedback específico por critérios de destaque
       if (criteria.seguranca.average >= 8.0) {
         feedback.push('Demonstrou consciência exemplar sobre segurança, seguindo rigorosamente os protocolos de prevenção.');
       }
@@ -297,7 +304,6 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
       feedback.push('Candidato aprovado e apto para exercer a função de Condutor de Turismo de Aventura com competência e segurança.');
       
     } else if (classification === 'reevaluation') {
-      // Feedback para reavaliação (nota final entre 7.0 e 7.9)
       feedback.push('Desempenho satisfatório, mas com necessidade de aprimoramento para atingir o padrão de excelência exigido.');
       
       const weakCriteria = Object.entries(criteria).filter(([_, data]) => data.average < 7.5);
@@ -313,7 +319,6 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
         feedback.push(`Competências em desenvolvimento: ${criteriaNames}. Próximo do padrão esperado, necessário refinamento.`);
       }
 
-      // Feedback específico por critério para reavaliação
       Object.entries(criteria).forEach(([key, data]) => {
         if (data.average < 8.0) {
           switch (key) {
@@ -348,7 +353,6 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
       }
       
     } else if (classification === 'rejected') {
-      // Feedback para reprovação (nota final menor que 7.0 ou presença menor que 70%)
       if (attendanceRate < 70) {
         feedback.push('Frequência insuficiente: Presença abaixo do mínimo exigido (70%). É obrigatório refazer o treinamento completo.');
       }
@@ -368,7 +372,6 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
         feedback.push(`Competências insuficientes: ${criteriaNames}. Requer desenvolvimento substancial antes de nova avaliação.`);
       }
 
-      // Feedback detalhado para cada critério com nota baixa
       Object.entries(criteria).forEach(([key, data]) => {
         if (data.average < 7.0) {
           switch (key) {
@@ -450,23 +453,23 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="candidateName">Nome do Candidato</Label>
-            <Input
-              id="candidateName"
-              value={formData.candidateName || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, candidateName: e.target.value }))}
-              placeholder="Nome completo"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="clientName">Nome do Cliente</Label>
             <Input
               id="clientName"
               value={formData.clientName || ''}
               onChange={(e) => setFormData(prev => ({ ...prev, clientName: e.target.value }))}
               placeholder="Nome da empresa/cliente"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="candidateName">Nome do Candidato</Label>
+            <Input
+              id="candidateName"
+              value={formData.candidateName || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, candidateName: e.target.value }))}
+              placeholder="Nome completo"
               required
             />
           </div>
@@ -615,6 +618,8 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ onSubmit, initialData }
               min="1"
               max="300"
               required
+              className="bg-gray-50"
+              readOnly
             />
           </div>
         </div>
