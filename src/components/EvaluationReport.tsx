@@ -47,6 +47,13 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
     const element = document.getElementById('evaluation-report');
     if (element) {
       try {
+        // Salvar o estado original do scroll
+        const originalScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const originalScrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        
+        // Rolar para o topo
+        window.scrollTo(0, 0);
+        
         // Temporariamente mostrar elementos ocultos para exportação
         const hiddenElements = element.querySelectorAll('.print\\:block');
         hiddenElements.forEach(el => {
@@ -59,19 +66,38 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
           (classificationElement as HTMLElement).style.display = 'flex';
         }
 
+        // Aguardar um momento para garantir que o DOM seja atualizado
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Calcular dimensões completas do elemento
+        const rect = element.getBoundingClientRect();
+        const totalHeight = element.scrollHeight;
+        const totalWidth = element.scrollWidth;
+
         const canvas = await html2canvas(element, {
-          height: element.scrollHeight,
-          width: element.scrollWidth,
+          height: totalHeight,
+          width: Math.max(totalWidth, rect.width),
           scrollX: 0,
           scrollY: 0,
+          x: 0,
+          y: 0,
           useCORS: true,
           allowTaint: true,
-          scale: 3, // Aumentar escala para melhor resolução
+          scale: 2, // Escala alta para resolução
           backgroundColor: '#ffffff',
           logging: false,
-          removeContainer: true,
-          imageTimeout: 15000,
-          foreignObjectRendering: true
+          removeContainer: false,
+          imageTimeout: 30000,
+          foreignObjectRendering: true,
+          onclone: (clonedDoc) => {
+            // Garantir que o elemento clonado tenha a altura completa
+            const clonedElement = clonedDoc.getElementById('evaluation-report');
+            if (clonedElement) {
+              clonedElement.style.height = 'auto';
+              clonedElement.style.minHeight = totalHeight + 'px';
+              clonedElement.style.overflow = 'visible';
+            }
+          }
         });
         
         // Restaurar visibilidade original
@@ -79,12 +105,16 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
           (el as HTMLElement).style.display = '';
         });
 
+        // Restaurar posição de scroll original
+        window.scrollTo(originalScrollLeft, originalScrollTop);
+
         const link = document.createElement('a');
         link.download = `relatorio-${data.candidateName.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'dd-MM-yyyy')}.png`;
         link.href = canvas.toDataURL('image/png', 1.0); // Qualidade máxima
         link.click();
       } catch (error) {
         console.error('Erro ao exportar PNG:', error);
+        alert('Erro ao exportar imagem. Tente novamente.');
       }
     }
   };
@@ -184,7 +214,7 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
       </div>
 
       {/* Conteúdo do Relatório */}
-      <div id="evaluation-report" className="space-y-6 print:space-y-4">
+      <div id="evaluation-report" className="space-y-6 print:space-y-4" style={{ minHeight: 'auto', overflow: 'visible' }}>
         {/* Dados do Candidato */}
         <Card className="p-8 print:p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-800 print:break-inside-avoid">
           <div className="flex items-start space-x-6 print:space-x-4">
