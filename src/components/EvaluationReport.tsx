@@ -47,11 +47,20 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
     const element = document.getElementById('evaluation-report');
     if (element) {
       try {
-        // Salvar o estado original do scroll
+        // Salvar estado original
         const originalScrollTop = window.pageYOffset || document.documentElement.scrollTop;
         const originalScrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        const originalBodyOverflow = document.body.style.overflow;
+        const originalElementStyle = {
+          position: element.style.position,
+          top: element.style.top,
+          left: element.style.left,
+          width: element.style.width,
+          transform: element.style.transform
+        };
         
-        // Rolar para o topo
+        // Configurar para captura
+        document.body.style.overflow = 'visible';
         window.scrollTo(0, 0);
         
         // Temporariamente mostrar elementos ocultos para exportação
@@ -66,52 +75,99 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
           (classificationElement as HTMLElement).style.display = 'flex';
         }
 
-        // Aguardar um momento para garantir que o DOM seja atualizado
+        // Aguardar renderização
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Forçar recálculo de layout
+        element.style.position = 'relative';
+        element.style.top = '0';
+        element.style.left = '0';
+        element.style.width = 'auto';
+        element.style.transform = 'none';
+
+        // Obter dimensões reais após ajustes
+        const rect = element.getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(element);
+        const paddingTop = parseInt(computedStyle.paddingTop) || 0;
+        const paddingBottom = parseInt(computedStyle.paddingBottom) || 0;
+        const paddingLeft = parseInt(computedStyle.paddingLeft) || 0;
+        const paddingRight = parseInt(computedStyle.paddingRight) || 0;
+
+        const totalWidth = element.scrollWidth + paddingLeft + paddingRight;
+        const totalHeight = element.scrollHeight + paddingTop + paddingBottom;
+
+        // Aguardar mais um pouco
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        // Calcular dimensões completas do elemento
-        const rect = element.getBoundingClientRect();
-        const totalHeight = element.scrollHeight;
-        const totalWidth = element.scrollWidth;
-
         const canvas = await html2canvas(element, {
+          width: totalWidth,
           height: totalHeight,
-          width: Math.max(totalWidth, rect.width),
           scrollX: 0,
           scrollY: 0,
           x: 0,
           y: 0,
           useCORS: true,
           allowTaint: true,
-          scale: 2, // Escala alta para resolução
+          scale: 3, // Escala máxima para alta qualidade
           backgroundColor: '#ffffff',
           logging: false,
           removeContainer: false,
-          imageTimeout: 30000,
+          imageTimeout: 60000,
           foreignObjectRendering: true,
-          onclone: (clonedDoc) => {
-            // Garantir que o elemento clonado tenha a altura completa
-            const clonedElement = clonedDoc.getElementById('evaluation-report');
-            if (clonedElement) {
-              clonedElement.style.height = 'auto';
-              clonedElement.style.minHeight = totalHeight + 'px';
-              clonedElement.style.overflow = 'visible';
+          windowWidth: totalWidth,
+          windowHeight: totalHeight,
+          onclone: (clonedDoc, clonedElement) => {
+            const clonedTarget = clonedDoc.getElementById('evaluation-report');
+            if (clonedTarget) {
+              // Garantir que o elemento clonado tenha dimensões corretas
+              clonedTarget.style.position = 'relative';
+              clonedTarget.style.top = '0';
+              clonedTarget.style.left = '0';
+              clonedTarget.style.width = 'auto';
+              clonedTarget.style.height = 'auto';
+              clonedTarget.style.minHeight = totalHeight + 'px';
+              clonedTarget.style.overflow = 'visible';
+              clonedTarget.style.transform = 'none';
+              clonedTarget.style.margin = '0';
+              clonedTarget.style.padding = computedStyle.padding;
+              
+              // Garantir que o body do documento clonado também esteja configurado
+              clonedDoc.body.style.margin = '0';
+              clonedDoc.body.style.padding = '0';
+              clonedDoc.body.style.width = totalWidth + 'px';
+              clonedDoc.body.style.height = totalHeight + 'px';
+              clonedDoc.body.style.overflow = 'visible';
             }
           }
         });
         
-        // Restaurar visibilidade original
+        // Restaurar estado original
+        element.style.position = originalElementStyle.position;
+        element.style.top = originalElementStyle.top;
+        element.style.left = originalElementStyle.left;
+        element.style.width = originalElementStyle.width;
+        element.style.transform = originalElementStyle.transform;
+        
+        document.body.style.overflow = originalBodyOverflow;
+        
         hiddenElements.forEach(el => {
           (el as HTMLElement).style.display = '';
         });
 
-        // Restaurar posição de scroll original
         window.scrollTo(originalScrollLeft, originalScrollTop);
 
+        // Criar e baixar a imagem
         const link = document.createElement('a');
         link.download = `relatorio-${data.candidateName.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'dd-MM-yyyy')}.png`;
         link.href = canvas.toDataURL('image/png', 1.0); // Qualidade máxima
         link.click();
+        
+        console.log('PNG exportado com sucesso:', {
+          originalDimensions: { width: rect.width, height: rect.height },
+          exportDimensions: { width: totalWidth, height: totalHeight },
+          canvasDimensions: { width: canvas.width, height: canvas.height }
+        });
+        
       } catch (error) {
         console.error('Erro ao exportar PNG:', error);
         alert('Erro ao exportar imagem. Tente novamente.');
@@ -214,7 +270,8 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
       </div>
 
       {/* Conteúdo do Relatório */}
-      <div id="evaluation-report" className="space-y-6 print:space-y-4" style={{ minHeight: 'auto', overflow: 'visible' }}>
+      <div id="evaluation-report" className="space-y-6 print:space-y-4 bg-white" style={{ minHeight: 'auto', overflow: 'visible', padding: '20px' }}>
+        
         {/* Dados do Candidato */}
         <Card className="p-8 print:p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-800 print:break-inside-avoid">
           <div className="flex items-start space-x-6 print:space-x-4">
