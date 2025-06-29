@@ -45,133 +45,143 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
 
   const handleExportPNG = async () => {
     const element = document.getElementById('evaluation-report');
-    if (element) {
-      try {
-        // Salvar estado original
-        const originalScrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const originalScrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-        const originalBodyOverflow = document.body.style.overflow;
-        const originalElementStyle = {
-          position: element.style.position,
-          top: element.style.top,
-          left: element.style.left,
-          width: element.style.width,
-          transform: element.style.transform
-        };
-        
-        // Configurar para captura
-        document.body.style.overflow = 'visible';
-        window.scrollTo(0, 0);
-        
-        // Temporariamente mostrar elementos ocultos para exportação
-        const hiddenElements = element.querySelectorAll('.print\\:block');
-        hiddenElements.forEach(el => {
-          (el as HTMLElement).style.display = 'block';
-        });
+    if (!element) {
+      console.error('Elemento evaluation-report não encontrado');
+      return;
+    }
 
-        // Garantir que o título da classificação seja visível
-        const classificationElement = element.querySelector('[data-classification-title]');
-        if (classificationElement) {
-          (classificationElement as HTMLElement).style.display = 'flex';
-        }
-
-        // Aguardar renderização
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        // Forçar recálculo de layout
-        element.style.position = 'relative';
-        element.style.top = '0';
-        element.style.left = '0';
-        element.style.width = 'auto';
-        element.style.transform = 'none';
-
-        // Obter dimensões reais após ajustes
-        const rect = element.getBoundingClientRect();
-        const computedStyle = window.getComputedStyle(element);
-        const paddingTop = parseInt(computedStyle.paddingTop) || 0;
-        const paddingBottom = parseInt(computedStyle.paddingBottom) || 0;
-        const paddingLeft = parseInt(computedStyle.paddingLeft) || 0;
-        const paddingRight = parseInt(computedStyle.paddingRight) || 0;
-
-        const totalWidth = element.scrollWidth + paddingLeft + paddingRight;
-        const totalHeight = element.scrollHeight + paddingTop + paddingBottom;
-
-        // Aguardar mais um pouco
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        const canvas = await html2canvas(element, {
-          width: totalWidth,
-          height: totalHeight,
-          scrollX: 0,
-          scrollY: 0,
-          x: 0,
-          y: 0,
-          useCORS: true,
-          allowTaint: true,
-          scale: 3, // Escala máxima para alta qualidade
-          backgroundColor: '#ffffff',
-          logging: false,
-          removeContainer: false,
-          imageTimeout: 60000,
-          foreignObjectRendering: true,
-          windowWidth: totalWidth,
-          windowHeight: totalHeight,
-          onclone: (clonedDoc, clonedElement) => {
-            const clonedTarget = clonedDoc.getElementById('evaluation-report');
-            if (clonedTarget) {
-              // Garantir que o elemento clonado tenha dimensões corretas
-              clonedTarget.style.position = 'relative';
-              clonedTarget.style.top = '0';
-              clonedTarget.style.left = '0';
-              clonedTarget.style.width = 'auto';
-              clonedTarget.style.height = 'auto';
-              clonedTarget.style.minHeight = totalHeight + 'px';
-              clonedTarget.style.overflow = 'visible';
-              clonedTarget.style.transform = 'none';
-              clonedTarget.style.margin = '0';
-              clonedTarget.style.padding = computedStyle.padding;
-              
-              // Garantir que o body do documento clonado também esteja configurado
-              clonedDoc.body.style.margin = '0';
-              clonedDoc.body.style.padding = '0';
-              clonedDoc.body.style.width = totalWidth + 'px';
-              clonedDoc.body.style.height = totalHeight + 'px';
-              clonedDoc.body.style.overflow = 'visible';
-            }
+    try {
+      console.log('Iniciando exportação PNG...');
+      
+      // Salvar estado original da página
+      const originalScrollTop = window.pageYOffset;
+      const originalScrollLeft = window.pageXOffset;
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalDocumentOverflow = document.documentElement.style.overflow;
+      
+      // Configurar página para captura completa
+      document.body.style.overflow = 'visible';
+      document.documentElement.style.overflow = 'visible';
+      window.scrollTo(0, 0);
+      
+      // Aguardar estabilização do scroll
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Forçar recálculo do layout
+      element.style.height = 'auto';
+      element.style.minHeight = 'auto';
+      element.style.maxHeight = 'none';
+      element.style.overflow = 'visible';
+      
+      // Aguardar renderização completa
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Obter dimensões reais do elemento
+      const rect = element.getBoundingClientRect();
+      const scrollHeight = element.scrollHeight;
+      const scrollWidth = element.scrollWidth;
+      
+      console.log('Dimensões do elemento:', {
+        rect: { width: rect.width, height: rect.height },
+        scroll: { width: scrollWidth, height: scrollHeight }
+      });
+      
+      // Usar as maiores dimensões para garantir captura completa
+      const captureWidth = Math.max(rect.width, scrollWidth, 800);
+      const captureHeight = Math.max(rect.height, scrollHeight, 1000);
+      
+      console.log('Dimensões de captura:', { width: captureWidth, height: captureHeight });
+      
+      // Configurar html2canvas com opções otimizadas
+      const canvas = await html2canvas(element, {
+        width: captureWidth,
+        height: captureHeight,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        useCORS: true,
+        allowTaint: true,
+        scale: 2, // Alta resolução
+        backgroundColor: '#ffffff',
+        logging: false,
+        removeContainer: false,
+        imageTimeout: 30000,
+        foreignObjectRendering: false,
+        ignoreElements: (element) => {
+          // Ignorar elementos de scroll ou navegação
+          return element.tagName === 'NOSCRIPT';
+        },
+        onclone: (clonedDoc, clonedElement) => {
+          console.log('Configurando elemento clonado...');
+          const clonedTarget = clonedDoc.getElementById('evaluation-report');
+          if (clonedTarget) {
+            // Garantir que o elemento clonado seja completamente visível
+            clonedTarget.style.position = 'static';
+            clonedTarget.style.top = 'auto';
+            clonedTarget.style.left = 'auto';
+            clonedTarget.style.width = 'auto';
+            clonedTarget.style.height = 'auto';
+            clonedTarget.style.minHeight = 'auto';
+            clonedTarget.style.maxHeight = 'none';
+            clonedTarget.style.overflow = 'visible';
+            clonedTarget.style.transform = 'none';
+            clonedTarget.style.margin = '0';
+            clonedTarget.style.padding = '20px';
+            clonedTarget.style.boxSizing = 'border-box';
+            
+            // Configurar o documento clonado
+            clonedDoc.body.style.margin = '0';
+            clonedDoc.body.style.padding = '0';
+            clonedDoc.body.style.width = captureWidth + 'px';
+            clonedDoc.body.style.height = captureHeight + 'px';
+            clonedDoc.body.style.overflow = 'visible';
+            clonedDoc.documentElement.style.overflow = 'visible';
+            
+            // Garantir que todos os elementos filhos sejam visíveis
+            const allElements = clonedTarget.querySelectorAll('*');
+            allElements.forEach(el => {
+              const htmlEl = el as HTMLElement;
+              if (htmlEl.style.overflow === 'hidden') {
+                htmlEl.style.overflow = 'visible';
+              }
+            });
           }
-        });
-        
-        // Restaurar estado original
-        element.style.position = originalElementStyle.position;
-        element.style.top = originalElementStyle.top;
-        element.style.left = originalElementStyle.left;
-        element.style.width = originalElementStyle.width;
-        element.style.transform = originalElementStyle.transform;
-        
-        document.body.style.overflow = originalBodyOverflow;
-        
-        hiddenElements.forEach(el => {
-          (el as HTMLElement).style.display = '';
-        });
-
-        window.scrollTo(originalScrollLeft, originalScrollTop);
-
-        // Criar e baixar a imagem
-        const link = document.createElement('a');
-        link.download = `relatorio-${data.candidateName.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'dd-MM-yyyy')}.png`;
-        link.href = canvas.toDataURL('image/png', 1.0); // Qualidade máxima
-        link.click();
-        
-        console.log('PNG exportado com sucesso:', {
-          originalDimensions: { width: rect.width, height: rect.height },
-          exportDimensions: { width: totalWidth, height: totalHeight },
-          canvasDimensions: { width: canvas.width, height: canvas.height }
-        });
-        
-      } catch (error) {
-        console.error('Erro ao exportar PNG:', error);
-        alert('Erro ao exportar imagem. Tente novamente.');
+        }
+      });
+      
+      // Restaurar estado original
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalDocumentOverflow;
+      window.scrollTo(originalScrollLeft, originalScrollTop);
+      
+      console.log('Canvas criado:', { 
+        width: canvas.width, 
+        height: canvas.height,
+        dataURL: canvas.toDataURL().substring(0, 50) + '...'
+      });
+      
+      // Verificar se o canvas foi criado corretamente
+      if (canvas.width === 0 || canvas.height === 0) {
+        throw new Error('Canvas vazio - falha na captura');
       }
+      
+      // Criar e fazer download da imagem
+      const link = document.createElement('a');
+      const fileName = `relatorio-${data.candidateName.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'dd-MM-yyyy')}.png`;
+      link.download = fileName;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      
+      // Simular clique para download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('PNG exportado com sucesso:', fileName);
+      
+    } catch (error) {
+      console.error('Erro detalhado na exportação PNG:', error);
+      alert('Erro ao exportar imagem. Verifique o console para mais detalhes e tente novamente.');
     }
   };
 
@@ -270,7 +280,13 @@ const EvaluationReport: React.FC<EvaluationReportProps> = ({ data, onEdit }) => 
       </div>
 
       {/* Conteúdo do Relatório */}
-      <div id="evaluation-report" className="space-y-6 print:space-y-4 bg-white" style={{ minHeight: 'auto', overflow: 'visible', padding: '20px' }}>
+      <div id="evaluation-report" className="space-y-6 print:space-y-4 bg-white" style={{ 
+        minHeight: 'auto', 
+        overflow: 'visible', 
+        padding: '20px',
+        width: '100%',
+        maxWidth: 'none'
+      }}>
         
         {/* Dados do Candidato */}
         <Card className="p-8 print:p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-800 print:break-inside-avoid">
